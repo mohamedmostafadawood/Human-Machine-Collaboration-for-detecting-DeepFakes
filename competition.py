@@ -8,6 +8,8 @@ import numpy as np
 from tqdm import tqdm
 import os
 import multiprocessing as mp
+import random 
+from datasets import load_dataset
 
 # Use larger, more powerful models
 MODEL_NAME_1 = "EleutherAI/gpt-j-6B"
@@ -39,7 +41,8 @@ def judge_explanation(judge_model, judge_tokenizer, text, explanation):
     inputs = judge_tokenizer(text, explanation, return_tensors="pt", max_length=512, truncation=True).to(judge_model.device)
     with torch.no_grad():
         outputs = judge_model(**inputs)
-    return outputs.logits.squeeze()[1].item()
+    probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
+    return probabilities[0][1].item()  # Return probability of positive class
 
 def compete_and_evaluate(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, text):
     explanation1 = generate_explanation(agent1, agent1_tokenizer, text)
@@ -97,12 +100,32 @@ Explanation:"""
     return ppo_trainer1.model, ppo_trainer2.model
 
 def load_and_prepare_data():
-    human_texts = load_dataset("wikipedia", "20220301.en", split="train", trust_remote_code=True)
-    human_texts = [text for text in human_texts["text"] if len(text.split()) > 50][:5000]
-    
-    ai_texts = load_dataset("EleutherAI/pile", split="train")
-    ai_texts = [text for text in ai_texts["text"] if len(text.split()) > 50][:5000]
-    
+    # Load human-written texts
+    try:
+        human_texts = load_dataset("wikipedia", "20220301.en", split="train", trust_remote_code=True)
+        human_texts = [text for text in human_texts["text"] if len(text.split()) > 50][:5000]
+    except Exception as e:
+        print(f"Error loading Wikipedia dataset: {e}")
+        print("Using a fallback dataset for human-written texts...")
+        # Fallback to a smaller, more reliable dataset
+        human_texts = load_dataset("wikitext", "wikitext-103-raw-v1", split="train")
+        human_texts = [text for text in human_texts["text"] if len(text.split()) > 50][:5000]
+
+    # Load AI-generated texts
+    try:
+        # Try loading from an alternative source
+        ai_texts = load_dataset("openwebtext", split="train")
+        ai_texts = [text for text in ai_texts["text"] if len(text.split()) > 50][:5000]
+    except Exception as e:
+        print(f"Error loading AI-generated text dataset: {e}")
+        print("Using a synthetic dataset for AI-generated texts...")
+        # Create a synthetic dataset of "AI-generated" texts
+        ai_texts = [
+            f"This is a synthetic AI-generated text number {i}. " 
+            f"It contains some random words like: {' '.join(random.sample(['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape', 'honeydew', 'imbe', 'jackfruit', 'kiwi', 'lemon', 'mango', 'nectarine', 'orange', 'papaya', 'quince', 'raspberry', 'strawberry', 'tangerine'], 10))}."
+            for i in range(5000)
+        ]
+
     return human_texts, ai_texts
 
 def determine_winner(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, eval_texts):
@@ -187,35 +210,3 @@ if __name__ == "__main__":
     
     
     
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    print("Saving the winning model...")
-    save_model(winner_model, winner_tokenizer, "winning_agent")
-    
-    print("\nYou can now use the winning model to analyze texts.")
-    user_interface(winner_model, winner_tokenizer)
-    
-    
-if __name__ == "__main__":
-    if os.path.exists("./winning_agent_model"):
-        print("Loading saved winning model...")
-        model, tokenizer = load_saved_model("winning_agent")
-        user_interface(model, tokenizer)
-    else:
-        main()
