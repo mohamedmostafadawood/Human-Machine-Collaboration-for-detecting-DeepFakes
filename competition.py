@@ -9,6 +9,7 @@ from tqdm import tqdm
 import os
 import multiprocessing as mp
 
+# Use larger, more powerful models
 MODEL_NAME_1 = "EleutherAI/gpt-j-6B"
 MODEL_NAME_2 = "EleutherAI/gpt-neox-20b"
 JUDGE_MODEL_NAME = "roberta-large"
@@ -132,7 +133,6 @@ def load_saved_model(name):
     tokenizer = AutoTokenizer.from_pretrained(model_dir)
     return model, tokenizer
 
-
 def user_interface(model, tokenizer):
     while True:
         user_input = input("Enter a text to analyze (or 'quit' to exit): ")
@@ -169,9 +169,8 @@ def main():
     )
     print(f"\nThe winner is: {winner_name}")
     
-    print(f"\nThe winner is: {winner_name}")
-    
     print("Saving the winning model...")
+    
     save_model(winner_model, winner_tokenizer, "winning_agent")
     
     print("\nYou can now use the winning model to analyze texts.")
