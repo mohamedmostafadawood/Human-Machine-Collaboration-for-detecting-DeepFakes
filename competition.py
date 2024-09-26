@@ -9,7 +9,6 @@ from tqdm import tqdm
 import os
 import multiprocessing as mp
 
-# Use larger, more powerful models
 MODEL_NAME_1 = "EleutherAI/gpt-j-6B"
 MODEL_NAME_2 = "EleutherAI/gpt-neox-20b"
 JUDGE_MODEL_NAME = "roberta-large"
