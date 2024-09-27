@@ -16,7 +16,6 @@ def get_device():
 def get_model_device(model):
     return next(model.parameters()).device
 
-# Use smaller models
 MODEL_NAME_1 = "gpt2"  # Much smaller than GPT-J-6B
 MODEL_NAME_2 = "EleutherAI/gpt-neo-125M"  # Much smaller than GPT-NeoX-20B
 JUDGE_MODEL_NAME = "distilroberta-base"  # Smaller than RoBERTa-large
