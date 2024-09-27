@@ -206,26 +206,4 @@ if __name__ == "__main__":
         model, tokenizer = load_saved_model("winning_agent")
         user_interface(model, tokenizer)
     else:
-        main()
-    
-    
-    
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+        mainn()
