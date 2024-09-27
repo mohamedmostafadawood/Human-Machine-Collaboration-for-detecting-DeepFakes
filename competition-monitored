@@ -1,0 +1,311 @@
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSequenceClassification, TrainingArguments, Trainer
+from datasets import load_dataset
+from trl import PPOTrainer, PPOConfig, AutoModelForCausalLMWithValueHead
+from torch.utils.data import DataLoader
+from sklearn.model_selection import train_test_split
+import numpy as np
+from tqdm import tqdm
+import os
+import random 
+from torch.utils.data import DataLoader
+import wandb
+
+def get_device():
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def get_model_device(model):
+    return next(model.parameters()).device
+
+# Use smaller models
+MODEL_NAME_1 = "gpt2"  # Much smaller than GPT-J-6B
+MODEL_NAME_2 = "EleutherAI/gpt-neo-125M"  # Much smaller than GPT-NeoX-20B
+JUDGE_MODEL_NAME = "distilroberta-base"  # Smaller than RoBERTa-large
+
+from transformers import AutoTokenizer, GPT2Tokenizer, GPT2LMHeadModel, GPTNeoForCausalLM, RobertaTokenizer, RobertaForSequenceClassification
+
+def load_model_and_tokenizer(model_name, model_class=AutoModelForCausalLM):
+    print(f"Loading {model_name}...")
+    device = get_device()
+    if 'gpt2' in model_name.lower():
+        tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+        model = GPT2LMHeadModel.from_pretrained(model_name).to(device)
+    elif 'gpt-neo' in model_name.lower():
+        tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+        model = GPTNeoForCausalLM.from_pretrained(model_name).to(device)
+    elif 'roberta' in model_name.lower():
+        tokenizer = RobertaTokenizer.from_pretrained(model_name)
+        model = RobertaForSequenceClassification.from_pretrained(model_name).to(device)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = model_class.from_pretrained(model_name).to(device)
+    
+    if model is None or tokenizer is None:
+        raise ValueError(f"Failed to load model or tokenizer for {model_name}")
+
+    
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    model.config.pad_token_id = tokenizer.pad_token_id
+    
+    return model, tokenizer
+    
+def generate_explanation(model, tokenizer, text, max_new_tokens=100):
+    device = get_model_device(model)
+    prompt = f"Analyze if this text is human-written or AI-generated: '{text}'. Explanation:"
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True).to(device)
+    
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=max_new_tokens,
+        do_sample=True,
+        temperature=0.7,
+        pad_token_id=tokenizer.eos_token_id
+    )
+    
+    generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    explanation = generated_text[len(prompt):].strip()
+    return explanation
+
+def judge_explanation(judge_model, judge_tokenizer, text, explanation):
+    device = get_model_device(judge_model)
+    inputs = judge_tokenizer(text, explanation, return_tensors="pt", truncation=True).to(device)
+    with torch.no_grad():
+        outputs = judge_model(**inputs)
+    probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
+    return probabilities[0][1].item()
+
+def compete_and_evaluate(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, text):
+    explanation1 = generate_explanation(agent1, agent1_tokenizer, text, max_new_tokens=200)
+    explanation2 = generate_explanation(agent2, agent2_tokenizer, text, max_new_tokens=200)
+    
+    score1 = judge_explanation(judge_model, judge_tokenizer, text, explanation1)
+    score2 = judge_explanation(judge_model, judge_tokenizer, text, explanation2)
+    
+    if score1 > score2:
+        return 1, score1, 0
+    elif score2 > score1:
+        return 2, 0, score2
+    else:
+        return 0, 0, 0  # Tie, no reward
+
+
+
+def train_agents(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, texts):
+    winning_explanations = []
+    device = get_device()
+    ppo_model1 = AutoModelForCausalLMWithValueHead.from_pretrained(agent1.config.name_or_path).to(device)
+    ppo_model2 = AutoModelForCausalLMWithValueHead.from_pretrained(agent2.config.name_or_path).to(device)
+    
+    if agent1_tokenizer is None or agent2_tokenizer is None:
+        raise ValueError("Tokenizers are not properly initialized.")
+    
+    # PPO config for training
+    ppo_config = PPOConfig(
+        batch_size=128,
+        mini_batch_size=4,
+        gradient_accumulation_steps=1,
+        learning_rate=1e-5,
+        ppo_epochs=3,
+        init_kl_coef=0.2,  # Initial KL penalty coefficient
+        target_kl=6.0,  # Target KL value
+    )
+    
+    ppo_trainer1 = PPOTrainer(config=ppo_config, model=ppo_model1, tokenizer=agent1_tokenizer)
+    ppo_trainer2 = PPOTrainer(config=ppo_config, model=ppo_model2, tokenizer=agent2_tokenizer)
+    
+    dataloader = DataLoader(texts, batch_size=ppo_config.batch_size, shuffle=True, drop_last=False)
+    
+    for epoch in range(ppo_config.ppo_epochs):
+        epoch_kl1, epoch_kl2 = [], []
+        epoch_loss1, epoch_loss2 = [], []
+        epoch_reward1, epoch_reward2 = [], []
+        
+        for batch in tqdm(dataloader, desc=f"Training epoch {epoch+1}"):
+            queries1, queries2 = [], []
+            responses1, responses2 = [], []
+            rewards1, rewards2 = [], []
+            
+            for text in batch:
+                prompt = f"Analyze if this text is human-written or AI-generated: '{text}'. Explanation:"
+                query_tensor1 = agent1_tokenizer(prompt, return_tensors="pt", truncation=True).to(device)
+                query_tensor2 = agent2_tokenizer(prompt, return_tensors="pt", truncation=True).to(device)
+                
+                explanation1 = generate_explanation(ppo_model1, agent1_tokenizer, text)
+                explanation2 = generate_explanation(ppo_model2, agent2_tokenizer, text)
+                
+                winner, reward1, reward2 = compete_and_evaluate(ppo_model1, agent1_tokenizer, ppo_model2, agent2_tokenizer, judge_model, judge_tokenizer, text)
+                
+                if winner == 1:
+                    winning_explanations.append({"text": text, "explanation": explanation1})
+                    response_tensor1 = ppo_model1.generate(**query_tensor1, max_new_tokens=100)
+                    queries1.append(query_tensor1.input_ids[0])
+                    responses1.append(response_tensor1[0])
+                    rewards1.append(torch.tensor(reward1, device=device))
+                elif winner == 2:
+                    winning_explanations.append({"text": text, "explanation": explanation2})
+                    response_tensor2 = ppo_model2.generate(**query_tensor2, max_new_tokens=100)
+                    queries2.append(query_tensor2.input_ids[0])
+                    responses2.append(response_tensor2[0])
+                    rewards2.append(torch.tensor(reward2, device=device))
+            
+            if len(queries1) > 0:
+                ppo_trainer1.config.batch_size = len(queries1)
+                train_stats1 = ppo_trainer1.step(queries1, responses1, rewards1)
+                epoch_kl1.append(train_stats1['policy/kl'])
+                epoch_loss1.append(train_stats1['loss/total'])
+                epoch_reward1.extend(rewards1)
+
+            if len(queries2) > 0:
+                ppo_trainer2.config.batch_size = len(queries2)
+                train_stats2 = ppo_trainer2.step(queries2, responses2, rewards2)
+                epoch_kl2.append(train_stats2['policy/kl'])
+                epoch_loss2.append(train_stats2['loss/total'])
+                epoch_reward2.extend(rewards2)
+        
+        # Log epoch metrics
+        wandb.log({
+            "epoch": epoch,
+            "agent1_avg_kl": sum(epoch_kl1) / len(epoch_kl1) if epoch_kl1 else 0,
+            "agent2_avg_kl": sum(epoch_kl2) / len(epoch_kl2) if epoch_kl2 else 0,
+            "agent1_avg_loss": sum(epoch_loss1) / len(epoch_loss1) if epoch_loss1 else 0,
+            "agent2_avg_loss": sum(epoch_loss2) / len(epoch_loss2) if epoch_loss2 else 0,
+            "agent1_avg_reward": sum(epoch_reward1) / len(epoch_reward1) if epoch_reward1 else 0,
+            "agent2_avg_reward": sum(epoch_reward2) / len(epoch_reward2) if epoch_reward2 else 0,
+        })
+        
+        # Adjust KL penalty coefficient based on current KL divergence
+        if epoch_kl1:
+            ppo_trainer1.kl_ctl.update(sum(epoch_kl1) / len(epoch_kl1), ppo_config.target_kl)
+        if epoch_kl2:
+            ppo_trainer2.kl_ctl.update(sum(epoch_kl2) / len(epoch_kl2), ppo_config.target_kl)
+    
+    # Save winning explanations after training
+    save_winning_explanations(winning_explanations)
+    
+    return ppo_trainer1.model, ppo_trainer2.model
+    
+def load_and_prepare_data():
+    # Load a smaller dataset
+    dataset = load_dataset("tweet_eval", "sentiment", split="train", trust_remote_code=True)
+    texts = dataset["text"]
+    
+    # Limit to 1000 samples
+    texts = texts[:1000]
+    
+    return texts
+
+def determine_winner(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, eval_texts):
+    agent1_score = 0
+    agent2_score = 0
+    
+    for text in tqdm(eval_texts, desc="Determining winner"):
+        winner, _, _ = compete_and_evaluate(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, text)
+        if winner == 1:
+            agent1_score += 1
+        elif winner == 2:
+            agent2_score += 1
+    
+    if agent1_score > agent2_score:
+        return "Agent 1", agent1, agent1_tokenizer
+    else:
+        return "Agent 2", agent2, agent2_tokenizer
+
+def save_model(model, tokenizer, name):
+    output_dir = f"./{name}_model"
+    model.save_pretrained(output_dir)
+    tokenizer.save_pretrained(output_dir)
+    print(f"Model and tokenizer saved to {output_dir}")
+
+def load_saved_model(name):
+    model_dir = f"./{name}_model"
+    model = AutoModelForCausalLM.from_pretrained(model_dir)
+    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    model.config.pad_token_id = tokenizer.pad_token_id
+    return model, tokenizer
+
+def user_interface(model, tokenizer):
+    while True:
+        user_input = input("Enter a text to analyze (or 'quit' to exit): ")
+        if user_input.lower() == 'quit':
+            break
+        
+        try:
+            explanation = generate_explanation(model, tokenizer, user_input)
+            print("\nExplanation:")
+            print(explanation)
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
+        
+        print("\n" + "="*50 + "\n")
+
+
+import json
+
+def save_winning_explanations(explanations, file_name="winning_explanations.json"):
+    with open(file_name, 'w') as f:
+        json.dump(explanations, f, indent=2)
+    print(f"Winning explanations saved to {file_name}")
+
+def load_winning_explanations(file_name="winning_explanations.json"):
+    try:
+        with open(file_name, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"No existing explanations file found at {file_name}")
+        return []
+
+
+
+def main():
+    wandb.init(project="llm-competition", name="ppo-training")
+    print("Loading models...")
+    agent1, agent1_tokenizer = load_model_and_tokenizer(MODEL_NAME_1)
+    agent2, agent2_tokenizer = load_model_and_tokenizer(MODEL_NAME_2)
+    judge_model, judge_tokenizer = load_model_and_tokenizer(JUDGE_MODEL_NAME, AutoModelForSequenceClassification)
+
+    print(f"Agent1 tokenizer: {type(agent1_tokenizer)}")
+    print(f"Agent2 tokenizer: {type(agent2_tokenizer)}")
+    print(f"Judge tokenizer: {type(judge_tokenizer)}")
+
+    if agent1_tokenizer is None or agent2_tokenizer is None or judge_tokenizer is None:
+        raise ValueError("One or more tokenizers failed to initialize.")
+    
+    
+    print("Loading data...")
+    texts = load_and_prepare_data()
+    train_texts, eval_texts = train_test_split(texts, test_size=0.2)
+    
+    print("Training agents...")
+    improved_agent1, improved_agent2 = train_agents(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, train_texts)    
+    
+    device = get_device()
+    improved_agent1 = improved_agent1.to(device)
+    improved_agent2 = improved_agent2.to(device)
+    
+    
+    print("Determining the winner...")
+    winner_name, winner_model, winner_tokenizer = determine_winner(
+        improved_agent1, agent1_tokenizer, 
+        improved_agent2, agent2_tokenizer, 
+        judge_model, judge_tokenizer, 
+        eval_texts
+    )
+    print(f"\nThe winner is: {winner_name}")
+    
+    print("Saving the winning model...")
+    save_model(winner_model, winner_tokenizer, "winning_agent")
+    
+    print("\nYou can now use the winning model to analyze texts.")
+    user_interface(winner_model, winner_tokenizer)
+    wandb.finish()
+
+if __name__ == "__main__":
+    if os.path.exists("./winning_agent_model"):
+        print("Loading saved winning model...")
+        model, tokenizer = load_saved_model("winning_agent")
+        user_interface(model, tokenizer)
+    else:
+        main()
