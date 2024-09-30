@@ -1,3 +1,7 @@
+import os
+# Set the environment variable within the Python script
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSequenceClassification, TrainingArguments, Trainer
 from datasets import load_dataset
@@ -6,15 +10,20 @@ from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split
 import numpy as np
 from tqdm import tqdm
-import os
 import random 
 from torch.utils.data import DataLoader
 import wandb
 from transformers import LlamaTokenizer, LlamaForCausalLM
 from huggingface_hub import login
+from accelerate import Accelerator  
 
 login("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")
 
+# Set CUDA_VISIBLE_DEVICES inside the Python script
+#os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3"
+
+# Manually set the device to GPU 1 (if available)
+#device = torch.device('cuda:0')
 
 # Function to get device
 def get_device():
@@ -31,49 +40,92 @@ JUDGE_MODEL_NAME = "meta-llama/Meta-Llama-3-8B"
 # Load LLaMA 3-8B
 def load_model_and_tokenizer(model_name):
     print(f"Loading {model_name}...")
-    device = get_device()
-
-    # Use AutoTokenizer to avoid mismatches
+    
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = LlamaForCausalLM.from_pretrained(model_name).to(device)
-
+    model = LlamaForCausalLM.from_pretrained(model_name, torch_dtype=torch.bfloat16)
+    
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     model.config.pad_token_id = tokenizer.pad_token_id
     
     return model, tokenizer
     
-def generate_explanation(model, tokenizer, text, max_new_tokens=300):
-    device = get_model_device(model)
-    prompt = f"Analyze if this text is human-written or AI-generated: '{text}'. Explanation:"
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True).to(device)
+def generate_explanation(model, tokenizer, text, accelerator=None, max_new_tokens=500):
+    prompt = f"""Analyze the following text and determine if it's human-written or AI-generated (deepfake text). Provide a detailed explanation following these steps:
+
+1. Initial impression: State your immediate thoughts on the text's origin.
+2. Language analysis: 
+   - Examine the complexity and variety of sentence structures.
+   - Assess the vocabulary usage and any unusual word choices.
+   - Look for patterns in punctuation and formatting.
+3. Content evaluation:
+   - Assess the coherence and flow of ideas.
+   - Check for logical consistency throughout the text.
+   - Evaluate the depth and specificity of information provided.
+4. Contextual understanding:
+   - Determine if the text demonstrates nuanced understanding of context.
+   - Look for cultural references or idioms that might be challenging for AI.
+5. Emotional intelligence:
+   - Assess if the text conveys appropriate emotional tone for its content.
+   - Look for subtle expressions of sentiment that might be difficult for AI to replicate.
+6. Errors and inconsistencies:
+   - Identify any factual errors or logical flaws.
+   - Look for repetitive phrases or unusual patterns that might indicate machine generation.
+7. Conclusion:
+   - Summarize your findings.
+   - State your final judgment on whether the text is human-written or AI-generated.
+   - Provide a confidence level for your decision (e.g., low, medium, high).
+
+Text to analyze: "{text}"
+
+Detailed Explanation:"""
+
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True)
     
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=max_new_tokens,
-        do_sample=True,
-        temperature=0.7,
-        pad_token_id=tokenizer.eos_token_id
-    )
+    if accelerator:
+        inputs = accelerator.prepare(inputs)
+        model = accelerator.unwrap_model(model)
+    
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=True,
+            temperature=0.7,
+            pad_token_id=tokenizer.eos_token_id
+        )
+    
+    if accelerator:
+        outputs = accelerator.gather(outputs).cpu()
     
     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
     explanation = generated_text[len(prompt):].strip()
     return explanation
 
-def judge_explanation(judge_model, judge_tokenizer, text, explanation):
-    device = get_model_device(judge_model)
-    inputs = judge_tokenizer(text, explanation, return_tensors="pt", truncation=True).to(device)
+def judge_explanation(judge_model, judge_tokenizer, text, explanation, accelerator=None):
+    inputs = judge_tokenizer(text, explanation, return_tensors="pt", truncation=True)
+    
+    if accelerator:
+        inputs = accelerator.prepare(inputs)
+        judge_model = accelerator.unwrap_model(judge_model)
+    
     with torch.no_grad():
         outputs = judge_model(**inputs)
-    probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
+    
+    if accelerator:
+        logits = accelerator.gather(outputs.logits).cpu()
+    else:
+        logits = outputs.logits
+    
+    probabilities = torch.nn.functional.softmax(logits, dim=-1)
     return probabilities[0][1].item()
 
-def compete_and_evaluate(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, text):
-    explanation1 = generate_explanation(agent1, agent1_tokenizer, text, max_new_tokens=300)
-    explanation2 = generate_explanation(agent2, agent2_tokenizer, text, max_new_tokens=300)
+def compete_and_evaluate(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, text, accelerator):
+    explanation1 = generate_explanation(agent1, agent1_tokenizer, text, accelerator, max_new_tokens=300)
+    explanation2 = generate_explanation(agent2, agent2_tokenizer, text, accelerator, max_new_tokens=300)
     
-    score1 = judge_explanation(judge_model, judge_tokenizer, text, explanation1)
-    score2 = judge_explanation(judge_model, judge_tokenizer, text, explanation2)
+    score1 = judge_explanation(judge_model, judge_tokenizer, text, explanation1, accelerator)
+    score2 = judge_explanation(judge_model, judge_tokenizer, text, explanation2, accelerator)
     
     if score1 > score2:
         return 1, score1, 0
@@ -81,76 +133,93 @@ def compete_and_evaluate(agent1, agent1_tokenizer, agent2, agent2_tokenizer, jud
         return 2, 0, score2
     else:
         return 0, 0, 0  # Tie, no reward
-
-
-
-def train_agents(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, texts):
-    winning_explanations = []
-    device = get_device()
-    ppo_model1 = AutoModelForCausalLMWithValueHead.from_pretrained(agent1.config.name_or_path).to(device)
-    ppo_model2 = AutoModelForCausalLMWithValueHead.from_pretrained(agent2.config.name_or_path).to(device)
     
+
+def train_agents(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, texts, labels, accelerator):
+    winning_explanations = []
+    
+    # Initialize PPO models
+    ppo_model1 = AutoModelForCausalLMWithValueHead.from_pretrained(agent1.config.name_or_path)
+    ppo_model2 = AutoModelForCausalLMWithValueHead.from_pretrained(agent2.config.name_or_path)
+    
+    # Check if tokenizers are properly initialized
     if agent1_tokenizer is None or agent2_tokenizer is None:
         raise ValueError("Tokenizers are not properly initialized.")
     
     # PPO config for training
     ppo_config = PPOConfig(
-    batch_size=64,  # Adjust for larger models to fit in GPU memory
-    mini_batch_size=8,
-    gradient_accumulation_steps=4,  # Increase to allow larger batch size
-    learning_rate=5e-6,  # Lower learning rate for larger models
-    ppo_epochs=4,
-    init_kl_coef=0.2,
-    target_kl=5.0,  # Adjust based on observed training
-)
-
+        batch_size=4,  # Reduced batch size due to model size
+        mini_batch_size=1,
+        gradient_accumulation_steps=8,  # Increased for larger effective batch size
+        learning_rate=1e-6,  # Lower learning rate for fine-tuning
+        ppo_epochs=4,
+        init_kl_coef=0.2,
+        target_kl=6.0,
+        max_grad_norm=1.0,
+    )
     
+    # Initialize PPO trainers
     ppo_trainer1 = PPOTrainer(config=ppo_config, model=ppo_model1, tokenizer=agent1_tokenizer)
     ppo_trainer2 = PPOTrainer(config=ppo_config, model=ppo_model2, tokenizer=agent2_tokenizer)
     
-    dataloader = DataLoader(texts, batch_size=ppo_config.batch_size, shuffle=True, drop_last=False)
+    # Prepare data loader
+    dataset = list(zip(texts, labels))
+    dataloader = DataLoader(dataset, batch_size=ppo_config.batch_size, shuffle=True, drop_last=False)
     
+    # Prepare models and data loader with accelerator
+    ppo_model1, ppo_model2, judge_model, dataloader = accelerator.prepare(
+        ppo_model1, ppo_model2, judge_model, dataloader
+    )
+    
+    # Training loop
     for epoch in range(ppo_config.ppo_epochs):
         epoch_kl1, epoch_kl2 = [], []
         epoch_loss1, epoch_loss2 = [], []
         epoch_reward1, epoch_reward2 = [], []
         
-        for batch in tqdm(dataloader, desc=f"Training epoch {epoch+1}"):
+        for batch, batch_labels in tqdm(dataloader, desc=f"Training epoch {epoch+1}"):
             queries1, queries2 = [], []
             responses1, responses2 = [], []
             rewards1, rewards2 = [], []
             
-            for text in batch:
-                prompt = f"Analyze if this text is human-written or AI-generated: '{text}'. Explanation:"
-                query_tensor1 = agent1_tokenizer(prompt, return_tensors="pt", truncation=True).to(device)
-                query_tensor2 = agent2_tokenizer(prompt, return_tensors="pt", truncation=True).to(device)
+            for text, label in zip(batch, batch_labels):
+                # Generate explanations
+                explanation1 = generate_explanation(ppo_model1, agent1_tokenizer, text, accelerator)
+                explanation2 = generate_explanation(ppo_model2, agent2_tokenizer, text, accelerator)
                 
-                explanation1 = generate_explanation(ppo_model1, agent1_tokenizer, text)
-                explanation2 = generate_explanation(ppo_model2, agent2_tokenizer, text)
+                # Compete and evaluate
+                winner, reward1, reward2 = compete_and_evaluate(ppo_model1, agent1_tokenizer, ppo_model2, agent2_tokenizer, judge_model, judge_tokenizer, text, accelerator)
                 
-                winner, reward1, reward2 = compete_and_evaluate(ppo_model1, agent1_tokenizer, ppo_model2, agent2_tokenizer, judge_model, judge_tokenizer, text)
-                
+                # Adjust rewards based on correct classification
                 if winner == 1:
                     winning_explanations.append({"text": text, "explanation": explanation1})
-                    response_tensor1 = ppo_model1.generate(**query_tensor1, max_new_tokens=300)
-                    queries1.append(query_tensor1.input_ids[0])
+                    reward1 = reward1 * 2 if (label == 0 and "human-written" in explanation1.lower()) or (label == 1 and "ai-generated" in explanation1.lower()) else reward1 * 0.5
+                    input_ids1 = agent1_tokenizer(text, return_tensors="pt", truncation=True).input_ids.to(ppo_model1.device)
+                    response_tensor1 = ppo_model1.generate(input_ids=input_ids1, max_new_tokens=300)
+                    queries1.append(input_ids1[0])
                     responses1.append(response_tensor1[0])
-                    rewards1.append(torch.tensor(reward1, device=device))
+                    rewards1.append(accelerator.prepare(torch.tensor(reward1)))
                 elif winner == 2:
                     winning_explanations.append({"text": text, "explanation": explanation2})
-                    response_tensor2 = ppo_model2.generate(**query_tensor2, max_new_tokens=300)
-                    queries2.append(query_tensor2.input_ids[0])
+                    reward2 = reward2 * 2 if (label == 0 and "human-written" in explanation2.lower()) or (label == 1 and "ai-generated" in explanation2.lower()) else reward2 * 0.5
+                    input_ids2 = agent2_tokenizer(text, return_tensors="pt", truncation=True).input_ids.to(ppo_model2.device)
+                    response_tensor2 = ppo_model2.generate(input_ids=input_ids2, max_new_tokens=300)
+                    queries2.append(input_ids2[0])
                     responses2.append(response_tensor2[0])
-                    rewards2.append(torch.tensor(reward2, device=device))
+                    rewards2.append(accelerator.prepare(torch.tensor(reward2)))
             
+            # Update Agent 1
             if len(queries1) > 0:
+                # Adjust batch size dynamically
                 ppo_trainer1.config.batch_size = len(queries1)
                 train_stats1 = ppo_trainer1.step(queries1, responses1, rewards1)
                 epoch_kl1.append(train_stats1['policy/kl'])
                 epoch_loss1.append(train_stats1['loss/total'])
                 epoch_reward1.extend(rewards1)
 
+            # Update Agent 2
             if len(queries2) > 0:
+                # Adjust batch size dynamically
                 ppo_trainer2.config.batch_size = len(queries2)
                 train_stats2 = ppo_trainer2.step(queries2, responses2, rewards2)
                 epoch_kl2.append(train_stats2['policy/kl'])
@@ -164,8 +233,8 @@ def train_agents(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model
             "agent2_avg_kl": sum(epoch_kl2) / len(epoch_kl2) if epoch_kl2 else 0,
             "agent1_avg_loss": sum(epoch_loss1) / len(epoch_loss1) if epoch_loss1 else 0,
             "agent2_avg_loss": sum(epoch_loss2) / len(epoch_loss2) if epoch_loss2 else 0,
-            "agent1_avg_reward": sum(epoch_reward1) / len(epoch_reward1) if epoch_reward1 else 0,
-            "agent2_avg_reward": sum(epoch_reward2) / len(epoch_reward2) if epoch_reward2 else 0,
+            "agent1_avg_reward": sum(reward.item() for reward in epoch_reward1) / len(epoch_reward1) if epoch_reward1 else 0,
+            "agent2_avg_reward": sum(reward.item() for reward in epoch_reward2) / len(epoch_reward2) if epoch_reward2 else 0,
         })
         
         # Adjust KL penalty coefficient based on current KL divergence
@@ -177,34 +246,51 @@ def train_agents(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model
     # Save winning explanations after training
     save_winning_explanations(winning_explanations)
     
-    return ppo_trainer1.model, ppo_trainer2.model
-    
-def load_and_prepare_data():
-    # Load a smaller dataset
-    dataset = load_dataset("tweet_eval", "sentiment", split="train", trust_remote_code=True)
-    texts = dataset["text"]
-    
-    # Limit to 1000 samples
-    texts = texts[:1000]
-    
-    return texts
+    return accelerator.unwrap_model(ppo_trainer1.model), accelerator.unwrap_model(ppo_trainer2.model)
 
-def determine_winner(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, eval_texts):
+    
+from datasets import load_dataset
+
+def load_and_prepare_data():
+    # Load the RAFT dataset with tweet_eval_hate configuration
+    dataset = load_dataset("ought/raft", "tweet_eval_hate", split="train")
+    
+    texts = []
+    labels = []
+    
+    # Let's print the first item to see its structure
+    print("Dataset item structure:", dataset[0])
+    
+    for item in dataset:
+        # Assuming the text is directly in the item (not nested)
+        texts.append(item['text'])  # Change 'input' to 'text'
+        
+        # Assuming the label is directly provided, not as target_scores
+        labels.append(item['label'])
+    
+    return texts, labels
+
+def determine_winner(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, eval_texts, eval_labels, accelerator):
     agent1_score = 0
     agent2_score = 0
     
-    for text in tqdm(eval_texts, desc="Determining winner"):
-        winner, _, _ = compete_and_evaluate(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, text)
+    for text, label in tqdm(zip(eval_texts, eval_labels), desc="Determining winner"):
+        winner, _, _ = compete_and_evaluate(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, text, accelerator)
+        
+        explanation1 = generate_explanation(agent1, agent1_tokenizer, text, accelerator)
+        explanation2 = generate_explanation(agent2, agent2_tokenizer, text, accelerator)
+        
         if winner == 1:
-            agent1_score += 1
+            agent1_score += 1 if (label == 0 and "human-written" in explanation1.lower()) or (label == 1 and "ai-generated" in explanation1.lower()) else 0
         elif winner == 2:
-            agent2_score += 1
+            agent2_score += 1 if (label == 0 and "human-written" in explanation2.lower()) or (label == 1 and "ai-generated" in explanation2.lower()) else 0
     
     if agent1_score > agent2_score:
         return "Agent 1", agent1, agent1_tokenizer
     else:
         return "Agent 2", agent2, agent2_tokenizer
-
+    
+    
 def save_model(model, tokenizer, name):
     output_dir = f"./{name}_model"
     model.save_pretrained(output_dir)
@@ -220,21 +306,20 @@ def load_saved_model(name):
     model.config.pad_token_id = tokenizer.pad_token_id
     return model, tokenizer
 
-def user_interface(model, tokenizer):
+def user_interface(model, tokenizer, accelerator):
     while True:
         user_input = input("Enter a text to analyze (or 'quit' to exit): ")
         if user_input.lower() == 'quit':
             break
         
         try:
-            explanation = generate_explanation(model, tokenizer, user_input)
-            print("\nExplanation:")
-            print(explanation)
+            explanation = generate_explanation(model, tokenizer, user_input, accelerator)
+            accelerator.print("\nExplanation:")
+            accelerator.print(explanation)
         except Exception as e:
-            print(f"An error occurred: {str(e)}")
+            accelerator.print(f"An error occurred: {str(e)}")
         
-        print("\n" + "="*50 + "\n")
-
+        accelerator.print("\n" + "="*50 + "\n")
 
 import json
 
@@ -254,46 +339,73 @@ def load_winning_explanations(file_name="winning_explanations.json"):
 
 
 def main():
-    wandb.init(project="llm-competition", name="ppo-training-llama")
-    print("Loading models...")
+    accelerator = Accelerator()
+    wandb.init(project="llm-competition", name="ppo-training-llama-raft")
+    
+    accelerator.print("Loading models...")
     agent1, agent1_tokenizer = load_model_and_tokenizer(MODEL_NAME_1)
     agent2, agent2_tokenizer = load_model_and_tokenizer(MODEL_NAME_2)
     judge_model, judge_tokenizer = load_model_and_tokenizer(JUDGE_MODEL_NAME)
 
-    print(f"Agent1 tokenizer: {type(agent1_tokenizer)}")
-    print(f"Agent2 tokenizer: {type(agent2_tokenizer)}")
-    print(f"Judge tokenizer: {type(judge_tokenizer)}")
+    accelerator.print(f"Agent1 tokenizer: {type(agent1_tokenizer)}")
+    accelerator.print(f"Agent2 tokenizer: {type(agent2_tokenizer)}")
+    accelerator.print(f"Judge tokenizer: {type(judge_tokenizer)}")
 
     if agent1_tokenizer is None or agent2_tokenizer is None or judge_tokenizer is None:
         raise ValueError("One or more tokenizers failed to initialize.")
     
-    print("Loading data...")
-    texts = load_and_prepare_data()
-    train_texts, eval_texts = train_test_split(texts, test_size=0.2)
+    accelerator.print("Loading data...")
+    texts, labels = load_and_prepare_data()
+    train_texts, eval_texts, train_labels, eval_labels = train_test_split(texts, labels, test_size=0.2, stratify=labels)    
+    # Prepare models with accelerator
+    agent1, agent2, judge_model = accelerator.prepare(agent1, agent2, judge_model)
     
-    print("Training agents...")
-    improved_agent1, improved_agent2 = train_agents(agent1, agent1_tokenizer, agent2, agent2_tokenizer, judge_model, judge_tokenizer, train_texts)    
+    # Train agents
+    accelerator.print("Training agents...")
+    improved_agent1, improved_agent2 = train_agents(
+        agent1, agent1_tokenizer, 
+        agent2, agent2_tokenizer, 
+        judge_model, judge_tokenizer, 
+        train_texts, train_labels, 
+        accelerator
+    )
     
-    device = get_device()
-    improved_agent1 = improved_agent1.to(device)
-    improved_agent2 = improved_agent2.to(device)
-    
-    print("Determining the winner...")
+    # Determine the winner
+    accelerator.print("Determining the winner...")
     winner_name, winner_model, winner_tokenizer = determine_winner(
         improved_agent1, agent1_tokenizer, 
         improved_agent2, agent2_tokenizer, 
         judge_model, judge_tokenizer, 
-        eval_texts
+        eval_texts, eval_labels,
+        accelerator
     )
-    print(f"\nThe winner is: {winner_name}")
+    accelerator.print(f"\nThe winner is: {winner_name}")
     
-    print("Saving the winning model...")
+    # Save the winning model
+    accelerator.print("Saving the winning model...")
     save_model(winner_model, winner_tokenizer, "winning_llama_agent")
     
-    print("\nYou can now use the winning model to analyze texts.")
-    user_interface(winner_model, winner_tokenizer)
-    wandb.finish()
+    # Evaluate the winning model
+    accelerator.print("\nEvaluating the winning model on test set...")
+    correct_predictions = 0
+    total_predictions = len(eval_texts)
     
+    for text, label in zip(eval_texts, eval_labels):
+        explanation = generate_explanation(winner_model, winner_tokenizer, text, accelerator)
+        predicted_label = 1 if "ai-generated" in explanation.lower() else 0
+        if predicted_label == label:
+            correct_predictions += 1
+    
+    accuracy = correct_predictions / total_predictions
+    accelerator.print(f"Test set accuracy: {accuracy:.2f}")
+    wandb.log({"test_accuracy": accuracy})
+    
+    # User interface for interacting with the winning model
+    accelerator.print("\nYou can now use the winning model to analyze texts.")
+    user_interface(winner_model, winner_tokenizer, accelerator)
+    
+    # Finish wandb run
+    wandb.finish()
+
 if __name__ == "__main__":
-   
-        main()
+    main()
