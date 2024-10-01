@@ -1,0 +1,158 @@
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSequenceClassification, Trainer
+from datasets import load_dataset
+from torch.utils.data import DataLoader
+from sklearn.model_selection import train_test_split
+import numpy as np
+from tqdm import tqdm
+import wandb
+import random
+import json
+
+def get_device():
+    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+def get_model_device(model):
+    return next(model.parameters()).device
+
+# Use smaller models
+MODEL_NAME_1 = "gpt2"
+MODEL_NAME_2 = "EleutherAI/gpt-neo-125M"
+PREFERENCE_MODEL_NAME = "distilroberta-base"  # The model used to rank explanations
+
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, GPTNeoForCausalLM, RobertaTokenizer, RobertaForSequenceClassification
+
+def load_model_and_tokenizer(model_name):
+    print(f"Loading {model_name}...")
+    device = get_device()
+    if 'gpt2' in model_name.lower():
+        tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+        model = GPT2LMHeadModel.from_pretrained(model_name).to(device)
+    elif 'gpt-neo' in model_name.lower():
+        tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+        model = GPTNeoForCausalLM.from_pretrained(model_name).to(device)
+    elif 'roberta' in model_name.lower():
+        tokenizer = RobertaTokenizer.from_pretrained(model_name)
+        model = RobertaForSequenceClassification.from_pretrained(model_name).to(device)
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    model.config.pad_token_id = tokenizer.pad_token_id
+
+    return model, tokenizer
+
+def generate_explanation(model, tokenizer, text, max_new_tokens=100):
+    device = get_model_device(model)
+    prompt = f"Analyze if this text is human-written or AI-generated: '{text}'. Explanation:"
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True).to(device)
+
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=max_new_tokens,
+        do_sample=True,
+        temperature=0.7,
+        pad_token_id=tokenizer.eos_token_id
+    )
+
+    generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    explanation = generated_text[len(prompt):].strip()
+    return explanation
+
+def judge_preference(preference_model, tokenizer, text, explanation1, explanation2):
+    """
+    Simulate preference by scoring both explanations and selecting the one with a higher score.
+    """
+    device = get_model_device(preference_model)
+    
+    input_1 = f"{text} {explanation1}"
+    input_2 = f"{text} {explanation2}"
+    
+    inputs_1 = tokenizer(input_1, return_tensors="pt", truncation=True).to(device)
+    inputs_2 = tokenizer(input_2, return_tensors="pt", truncation=True).to(device)
+
+    with torch.no_grad():
+        logits_1 = preference_model(**inputs_1).logits
+        logits_2 = preference_model(**inputs_2).logits
+
+    score_1 = logits_1.mean().item()  # Simulate preference score
+    score_2 = logits_2.mean().item()
+
+    # Preference: return 1 if explanation1 is preferred, otherwise 2
+    return 1 if score_1 > score_2 else 2
+
+def dpo_training_step(agent1, agent2, preference_model, tokenizer, text):
+    explanation1 = generate_explanation(agent1, tokenizer, text)
+    explanation2 = generate_explanation(agent2, tokenizer, text)
+
+    # Judge the preference
+    preferred_explanation = judge_preference(preference_model, tokenizer, text, explanation1, explanation2)
+    return preferred_explanation, explanation1, explanation2
+
+def train_agents_with_dpo(agent1, agent1_tokenizer, agent2, agent2_tokenizer, preference_model, texts):
+    device = get_device()
+    preference_model = preference_model.to(device)
+    
+    dpo_trainer1 = []  # Here we store training statistics for agent 1
+    dpo_trainer2 = []  # Here we store training statistics for agent 2
+    winning_explanations = []
+
+    # Prepare data loader
+    dataloader = DataLoader(texts, batch_size=32, shuffle=True, drop_last=False)
+
+    for epoch in range(4):  # Number of epochs
+        for batch in tqdm(dataloader, desc=f"Training epoch {epoch+1}"):
+            for text in batch:
+                # Conduct a DPO step by generating explanations and choosing the preferred one
+                preferred_explanation, explanation1, explanation2 = dpo_training_step(agent1, agent2, preference_model, agent1_tokenizer, text)
+
+                if preferred_explanation == 1:
+                    winning_explanations.append({"text": text, "explanation": explanation1})
+                    dpo_trainer1.append(explanation1)  # Track the preferred explanation for Agent 1
+                else:
+                    winning_explanations.append({"text": text, "explanation": explanation2})
+                    dpo_trainer2.append(explanation2)  # Track the preferred explanation for Agent 2
+
+        print(f"Epoch {epoch+1} complete.")
+        wandb.log({"epoch": epoch, "agent1_explanations": len(dpo_trainer1), "agent2_explanations": len(dpo_trainer2)})
+
+    save_winning_explanations(winning_explanations)
+
+    return agent1, agent2
+
+def load_and_prepare_data():
+    dataset = load_dataset("tweet_eval", "sentiment", split="train", trust_remote_code=True)
+    texts = dataset["text"]
+    return texts[:1000]  # Limit to 1000 samples for faster training
+
+def save_winning_explanations(explanations, file_name="winning_explanations.json"):
+    with open(file_name, 'w') as f:
+        json.dump(explanations, f, indent=2)
+    print(f"Winning explanations saved to {file_name}")
+
+def main():
+    wandb.init(project="llm-dpo-training", name="dpo-training")
+    print("Loading models...")
+    
+    # Load agent models and preference model
+    agent1, agent1_tokenizer = load_model_and_tokenizer(MODEL_NAME_1)
+    agent2, agent2_tokenizer = load_model_and_tokenizer(MODEL_NAME_2)
+    preference_model, preference_tokenizer = load_model_and_tokenizer(PREFERENCE_MODEL_NAME)
+
+    print("Loading data...")
+    texts = load_and_prepare_data()
+
+    print("Training agents with DPO...")
+    improved_agent1, improved_agent2 = train_agents_with_dpo(
+        agent1, agent1_tokenizer, agent2, agent2_tokenizer, preference_model, texts
+    )
+
+    # After training, you could save the models, evaluate them, or start the user interface
+    print("\nYou can now use the trained agents.")
+
+    wandb.finish()
+
+if __name__ == "__main__":
+    main()
