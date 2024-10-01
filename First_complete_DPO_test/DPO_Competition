@@ -1,0 +1,256 @@
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForSequenceClassification
+from datasets import load_dataset
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+import wandb
+import json
+import argparse
+import logging
+from torch.optim import AdamW
+import random
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def get_device():
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+def load_model_and_tokenizer(model_name, model_type="causal"):
+    logger.info(f"Loading {model_name}...")
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    
+    if model_type == "causal":
+        model = AutoModelForCausalLM.from_pretrained(model_name, device_map="auto", torch_dtype=torch.float32)
+    else:
+        model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=3, device_map="auto", torch_dtype=torch.float32)
+
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    model.config.pad_token_id = tokenizer.pad_token_id
+
+    return model, tokenizer
+
+def generate_explanation(model, tokenizer, text, max_new_tokens=100):
+    prompt = f"Analyze if the following text is human-written or AI-generated. Provide a clear and relevant explanation. Text: '{text[:100]}'. Explanation:"
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=128)
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+
+    try:
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=0.7,
+                top_k=50,
+                top_p=0.95,
+                num_return_sequences=1,
+                pad_token_id=tokenizer.eos_token_id,
+                no_repeat_ngram_size=2
+            )
+
+        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        explanation = generated_text[len(prompt):].strip()
+        if len(explanation) < 20:
+            logger.warning("Generated explanation too short. Discarding.")
+            return None
+    except RuntimeError as e:
+        logger.error(f"Error during generation: {e}")
+        return None
+
+    return explanation
+
+def judge_preference(judge_model, judge_tokenizer, text, explanation1, explanation2):
+    input_text = f"Text: {text[:100]}\nExplanation 1: {explanation1[:100]}\nExplanation 2: {explanation2[:100]}\nWhich explanation is better? Choose 0 for tie, 1 for first, 2 for second."
+    inputs = judge_tokenizer(input_text, return_tensors="pt", truncation=True, padding=True)
+    inputs = {k: v.to(judge_model.device) for k, v in inputs.items()}
+
+    try:
+        with torch.no_grad():
+            outputs = judge_model(**inputs)
+            logits = outputs.logits
+            probs = torch.softmax(logits, dim=1)
+            choice = torch.argmax(probs).item()
+    except RuntimeError as e:
+        logger.error(f"Error during judgment: {e}")
+        choice = random.choice([0, 1, 2])
+
+    logger.info(f"Judge's choice: {choice}")
+    return choice
+
+def compute_relevance(text, explanation, model, tokenizer):
+    inputs = tokenizer(text, explanation, return_tensors="pt", truncation=True, padding=True)
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
+    with torch.no_grad():
+        outputs = model(**inputs, output_hidden_states=True)
+    text_embedding = outputs.hidden_states[-1][:, 0, :].cpu().numpy()
+    explanation_embedding = outputs.hidden_states[-1][:, -1, :].cpu().numpy()
+    similarity = cosine_similarity(text_embedding, explanation_embedding)[0][0]
+    return similarity
+
+def dpo_training_step(agent, optimizer, tokenizer, text, explanation, other_explanation, judge_preference):
+    agent.train()
+    optimizer.zero_grad()
+
+    inputs = tokenizer(explanation, return_tensors="pt", truncation=True, max_length=128)
+    inputs = {k: v.to(agent.device) for k, v in inputs.items()}
+    
+    if inputs["input_ids"].numel() == 0:
+        logger.warning("Empty input tensor. Skipping training step.")
+        return 0.0
+
+    try:
+        outputs = agent(**inputs, labels=inputs["input_ids"])
+        loss = outputs.loss
+
+        # Implement a margin-based loss
+        if judge_preference == 1:  # This explanation was preferred
+            margin = 0.1
+            other_inputs = tokenizer(other_explanation, return_tensors="pt", truncation=True, max_length=128)
+            other_inputs = {k: v.to(agent.device) for k, v in other_inputs.items()}
+            other_outputs = agent(**other_inputs, labels=other_inputs["input_ids"])
+            loss = torch.max(torch.tensor(0.0).to(agent.device), other_outputs.loss - loss + margin)
+        elif judge_preference == 2:  # The other explanation was preferred
+            margin = 0.1
+            other_inputs = tokenizer(other_explanation, return_tensors="pt", truncation=True, max_length=128)
+            other_inputs = {k: v.to(agent.device) for k, v in other_inputs.items()}
+            other_outputs = agent(**other_inputs, labels=other_inputs["input_ids"])
+            loss = torch.max(torch.tensor(0.0).to(agent.device), loss - other_outputs.loss + margin)
+        # If judge_preference is 0 (tie), we don't modify the loss
+
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(agent.parameters(), max_norm=1.0)
+        optimizer.step()
+
+        return loss.item()
+    except RuntimeError as e:
+        logger.error(f"Error during training step: {e}")
+        return 0.0
+
+def train_agents_with_dpo(agent1, agent2, judge_model, tokenizer1, tokenizer2, judge_tokenizer, texts, args):
+    optimizer1 = AdamW(agent1.parameters(), lr=args.learning_rate)
+    optimizer2 = AdamW(agent2.parameters(), lr=args.learning_rate)
+    
+    dataloader = DataLoader(texts, batch_size=args.batch_size, shuffle=True)
+
+    winning_explanations = []
+
+    for epoch in range(args.num_epochs):
+        total_loss1, total_loss2 = 0, 0
+        wins1, wins2, ties = 0, 0, 0
+        relevance_scores1, relevance_scores2 = [], []
+        
+        for batch in tqdm(dataloader, desc=f"Training epoch {epoch+1}"):
+            for text in batch:
+                explanation1 = generate_explanation(agent1, tokenizer1, text)
+                explanation2 = generate_explanation(agent2, tokenizer2, text)
+
+                if explanation1 is None or explanation2 is None:
+                    continue
+
+                logger.info(f"Text: {text[:50]}...")
+                logger.info(f"Explanation 1: {explanation1[:50]}...")
+                logger.info(f"Explanation 2: {explanation2[:50]}...")
+
+                judge_choice = judge_preference(judge_model, judge_tokenizer, text, explanation1, explanation2)
+
+                relevance1 = compute_relevance(text, explanation1, agent1, tokenizer1)
+                relevance2 = compute_relevance(text, explanation2, agent2, tokenizer2)
+                relevance_scores1.append(relevance1)
+                relevance_scores2.append(relevance2)
+
+                if judge_choice == 1:
+                    loss1 = dpo_training_step(agent1, optimizer1, tokenizer1, text, explanation1, explanation2, 1)
+                    loss2 = dpo_training_step(agent2, optimizer2, tokenizer2, text, explanation2, explanation1, 2)
+                    winning_explanations.append({"text": text, "explanation": explanation1, "agent": "1"})
+                    wins1 += 1
+                elif judge_choice == 2:
+                    loss1 = dpo_training_step(agent1, optimizer1, tokenizer1, text, explanation1, explanation2, 2)
+                    loss2 = dpo_training_step(agent2, optimizer2, tokenizer2, text, explanation2, explanation1, 1)
+                    winning_explanations.append({"text": text, "explanation": explanation2, "agent": "2"})
+                    wins2 += 1
+                else:  # Tie
+                    loss1 = dpo_training_step(agent1, optimizer1, tokenizer1, text, explanation1, explanation2, 0)
+                    loss2 = dpo_training_step(agent2, optimizer2, tokenizer2, text, explanation2, explanation1, 0)
+                    ties += 1
+
+                logger.info(f"Loss 1: {loss1}, Loss 2: {loss2}")
+
+                total_loss1 += loss1
+                total_loss2 += loss2
+
+        avg_loss1 = total_loss1 / len(dataloader)
+        avg_loss2 = total_loss2 / len(dataloader)
+        avg_relevance1 = np.mean(relevance_scores1)
+        avg_relevance2 = np.mean(relevance_scores2)
+        logger.info(f"Epoch {epoch+1} complete. Average loss: Agent1 {avg_loss1:.4f}, Agent2 {avg_loss2:.4f}")
+        logger.info(f"Wins: Agent1 {wins1}, Agent2 {wins2}, Ties {ties}")
+        logger.info(f"Average Relevance: Agent1 {avg_relevance1:.4f}, Agent2 {avg_relevance2:.4f}")
+        wandb.log({
+            "epoch": epoch + 1,
+            "loss_agent1": avg_loss1,
+            "loss_agent2": avg_loss2,
+            "wins_agent1": wins1,
+            "wins_agent2": wins2,
+            "ties": ties,
+            "relevance_agent1": avg_relevance1,
+            "relevance_agent2": avg_relevance2
+        })
+
+    save_winning_explanations(winning_explanations)
+
+    return agent1, agent2
+
+def load_and_prepare_data(args):
+    dataset = load_dataset("tweet_eval", "sentiment", split="train", trust_remote_code=True)
+    texts = dataset["text"]
+    texts = [text for text in texts if len(text.strip()) > 10]  # Filter out very short texts
+    return texts[:args.num_samples]
+
+def save_winning_explanations(explanations, file_name="winning_explanations.json"):
+    with open(file_name, 'w') as f:
+        json.dump(explanations, f, indent=2)
+    logger.info(f"Winning explanations saved to {file_name}")
+
+def main(args):
+    wandb.init(project="llm-dpo-training", name="complete-enhanced-competing-agents-dpo-training", config=args)
+    
+    logger.info("Loading models...")
+    agent1, tokenizer1 = load_model_and_tokenizer(args.model_name_1)
+    agent2, tokenizer2 = load_model_and_tokenizer(args.model_name_2)
+    judge_model, judge_tokenizer = load_model_and_tokenizer(args.judge_model_name, model_type="classification")
+
+    logger.info("Loading data...")
+    texts = load_and_prepare_data(args)
+
+    logger.info("Training agents with DPO...")
+    improved_agent1, improved_agent2 = train_agents_with_dpo(
+        agent1, agent2, judge_model, tokenizer1, tokenizer2, judge_tokenizer, texts, args
+    )
+
+    # Save the improved models
+    improved_agent1.save_pretrained(f"{args.output_dir}/agent1")
+    tokenizer1.save_pretrained(f"{args.output_dir}/agent1")
+    improved_agent2.save_pretrained(f"{args.output_dir}/agent2")
+    tokenizer2.save_pretrained(f"{args.output_dir}/agent2")
+    logger.info(f"Improved models saved to {args.output_dir}")
+
+    wandb.finish()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Complete Enhanced DPO Training for Competing Language Models")
+    parser.add_argument("--model_name_1", type=str, default="distilgpt2", help="Name of the first model to train")
+    parser.add_argument("--model_name_2", type=str, default="distilgpt2", help="Name of the second model to train")
+    parser.add_argument("--judge_model_name", type=str, default="distilroberta-base", help="Name of the judge model")
+    parser.add_argument("--num_epochs", type=int, default=3, help="Number of training epochs")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training")
+    parser.add_argument("--learning_rate", type=float, default=1e-5, help="Learning rate for optimizer")
+    parser.add_argument("--num_samples", type=int, default=200, help="Number of samples to use for training")
+    parser.add_argument("--output_dir", type=str, default="./complete_enhanced_dpo_models", help="Directory to save the improved models")
+    
+    args = parser.parse_args()
+    main(args)
