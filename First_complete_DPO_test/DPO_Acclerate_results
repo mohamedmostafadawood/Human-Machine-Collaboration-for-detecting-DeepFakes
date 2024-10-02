@@ -1,0 +1,6 @@
+INFO - Epoch 1 complete. Average loss: Agent1 0.7698, Agent2 0.5411
+2024-10-02 13:56:14,267 - INFO - Wins: Agent1 7, Agent2 0, Ties 43
+2024-10-02 13:56:14,267 - INFO - Average Relevance: Agent1 0.0426, Agent2 0.0355
+2024-10-02 13:56:14,268 - INFO - Winning explanations saved to winning_explanations.json
+2024-10-02 13:56:20,667 - INFO - Improved models saved to ./llama_dpo_models
+
