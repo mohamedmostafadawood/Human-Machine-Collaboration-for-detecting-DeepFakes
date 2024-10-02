@@ -19,7 +19,7 @@ import sys
 print(sys.executable)
 
 # Set your Hugging Face token
-HfFolder.save_token("your_huggingface_token_here")  # Replace with your actual token
+HfFolder.save_token("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")  # Replace with your actual token
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
