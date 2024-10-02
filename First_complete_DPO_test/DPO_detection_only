@@ -11,124 +11,151 @@ import logging
 from torch.optim import AdamW
 import random
 import numpy as np
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from huggingface_hub import HfFolder
 from accelerate import Accelerator
+from torch.cuda.amp import autocast
+from typing import List, Tuple
+import time
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Initialize the accelerator
-accelerator = Accelerator(mixed_precision="fp16")
+accelerator = Accelerator()
 
-def check_tensor(tensor, tensor_name):
-    """Helper function to check for NaN or Inf in a tensor"""
-    if torch.isnan(tensor).any() or torch.isinf(tensor).any():
-        logger.error(f"{tensor_name} contains NaN or Inf values.")
+def set_seed(seed: int):
+    """Set random seed for reproducibility."""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    logger.info(f"Random seed set to {seed}")
+    wandb.config.update({"random_seed": seed})
 
-def get_device():
-    return "cuda" if torch.cuda.is_available() else "cpu"
+def load_model_and_tokenizer(model_name: str, model_type: str = "llama") -> Tuple[torch.nn.Module, AutoTokenizer]:
+    """Load model and tokenizer with error handling and logging."""
+    try:
+        logger.info(f"Loading {model_name}...")
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        if model_type == "llama":
+            model = LlamaForCausalLM.from_pretrained(
+                model_name, 
+                device_map="auto", 
+                load_in_8bit=True, 
+                torch_dtype=torch.float16
+            )
+        else:
+            model = AutoModelForSequenceClassification.from_pretrained(
+                model_name, 
+                num_labels=2,
+                device_map="auto", 
+                torch_dtype=torch.float16
+            )
 
-def load_model_and_tokenizer(model_name, model_type="llama"):
-    logger.info(f"Loading {model_name}...")
-    
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    if model_type == "llama":
-        model = LlamaForCausalLM.from_pretrained(
-            model_name, 
-            device_map="auto", 
-            load_in_8bit=True, 
-            torch_dtype=torch.float16
-        )
-    else:
-        model = AutoModelForSequenceClassification.from_pretrained(
-            model_name, 
-            num_labels=2,  # Binary classification for 'real' and 'fake'
-            device_map="auto", 
-            torch_dtype=torch.float16
-        )
+        # Ensure the tokenizer has a padding token
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token  # Use EOS token as pad token
+            logger.info("Setting pad_token to eos_token.")
+        
+        model.config.pad_token_id = tokenizer.pad_token_id
+        
+        wandb.config.update({f"{model_type}_model": model_name})
+        return accelerator.prepare(model), tokenizer
+    except Exception as e:
+        logger.error(f"Error loading model {model_name}: {str(e)}")
+        wandb.log({"model_loading_error": str(e)})
+        raise
 
-    # Ensure the tokenizer has a padding token
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token  # Use EOS token as the pad token if no pad token exists
-        logger.info("Setting pad_token to eos_token.")
-    
-    model.config.pad_token_id = tokenizer.pad_token_id  # Ensure model knows about the pad token
-    
-    model = accelerator.prepare(model)
-    
-    return model, tokenizer
-
-
-def classify_text(model, tokenizer, text):
-    prompt = f"Is the following text human-written or AI-generated? Text: '{text[:100]}'. Reply with 'real' or 'fake'."
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=128)
-    
-    # Move inputs to the correct device
-    inputs = {k: v.to(model.device) for k, v in inputs.items()}
-    
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=2,  
-            do_sample=True,
-            temperature=0.7,
-            pad_token_id=tokenizer.eos_token_id
-        )
-    
-    generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True).strip().lower()
-    
-    # Extract decision from generated text
-    if 'real' in generated_text:
-        return 'real'
-    elif 'fake' in generated_text:
-        return 'fake'
-    else:
-        logger.warning("Generated text did not contain a valid 'real' or 'fake' classification.")
+def classify_text(model: torch.nn.Module, tokenizer: AutoTokenizer, text: str) -> str:
+    """Classify text as 'real' or 'fake' with error handling."""
+    try:
+        prompt = f"Is the following text human-written or AI-generated? Text: '{text[:100]}'. Reply with 'real' or 'fake'."
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=128)
+        inputs = {k: v.to(model.device) for k, v in inputs.items()}
+        
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=2,  
+                do_sample=True,
+                temperature=0.7,
+                pad_token_id=tokenizer.eos_token_id
+            )
+        
+        generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True).strip().lower()
+        
+        if 'real' in generated_text:
+            return 'real'
+        elif 'fake' in generated_text:
+            return 'fake'
+        else:
+            logger.warning("Generated text did not contain a valid 'real' or 'fake' classification.")
+            return None
+    except Exception as e:
+        logger.error(f"Error in classify_text: {str(e)}")
+        wandb.log({"classification_error": str(e)})
         return None
 
-def judge_preference(judge_model, judge_tokenizer, text, decision1, decision2):
-    """Judge model compares the two decisions (real/fake) and outputs a preference"""
-    input_text = f"Text: {text[:100]}\nDecision 1: {decision1}\nDecision 2: {decision2}\nWhich decision is better? Choose 1 for first or 2 for second."
-    inputs = judge_tokenizer(input_text, return_tensors="pt", truncation=True, padding=True, max_length=512)
-    inputs = {k: v.to(judge_model.device) for k, v in inputs.items()}
+def judge_preference(judge_model: torch.nn.Module, judge_tokenizer: AutoTokenizer, text: str, decision1: str, decision2: str) -> int:
+    """Judge model compares the two decisions (real/fake) and outputs a preference."""
+    try:
+        input_text = f"Text: {text[:100]}\nDecision 1: {decision1}\nDecision 2: {decision2}\nWhich decision is better? Choose 1 for first or 2 for second."
+        inputs = judge_tokenizer(input_text, return_tensors="pt", truncation=True, padding=True, max_length=512)
+        inputs = {k: v.to(judge_model.device) for k, v in inputs.items()}
 
-    with torch.no_grad():
-        outputs = judge_model(**inputs)
-        logits = outputs.logits
-        choice = torch.argmax(logits).item() + 1  # 1 for first, 2 for second
-        return choice
+        with torch.no_grad():
+            outputs = judge_model(**inputs)
+            logits = outputs.logits
+            choice = torch.argmax(logits).item() + 1  # 1 for first, 2 for second
+            return choice
+    except Exception as e:
+        logger.error(f"Error in judge_preference: {str(e)}")
+        wandb.log({"judge_preference_error": str(e)})
+        return 0  # Return 0 to indicate an error
 
-def dpo_training_step(agent, optimizer, tokenizer, text, decision, other_decision, judge_preference, accumulation_steps=4):
-    agent.train()
-    optimizer.zero_grad()
+def dpo_training_step(agent: torch.nn.Module, optimizer: torch.optim.Optimizer, tokenizer: AutoTokenizer, 
+                      text: str, decision: str, other_decision: str, judge_preference: int, 
+                      accumulation_steps: int = 4) -> float:
+    """Perform a single DPO training step."""
+    try:
+        agent.train()
+        optimizer.zero_grad()
 
-    inputs = tokenizer(decision, return_tensors="pt", truncation=True, max_length=128)
-    inputs = {k: v.to(agent.device) for k, v in inputs.items()}
+        inputs = tokenizer(decision, return_tensors="pt", truncation=True, max_length=128)
+        inputs = {k: v.to(agent.device) for k, v in inputs.items()}
 
-    outputs = agent(**inputs, labels=inputs["input_ids"])
-    loss = outputs.loss / accumulation_steps
+        with autocast():
+            outputs = agent(**inputs, labels=inputs["input_ids"])
+            loss = outputs.loss / accumulation_steps
 
-    if judge_preference == 1:  # If this decision was preferred
-        margin = 0.1
-        other_inputs = tokenizer(other_decision, return_tensors="pt", truncation=True, max_length=128)
-        other_inputs = {k: v.to(agent.device) for k, v in other_inputs.items()}
-        other_outputs = agent(**other_inputs, labels=other_inputs["input_ids"])
-        loss = torch.max(torch.tensor(0.0).to(agent.device), other_outputs.loss - loss + margin)
-    elif judge_preference == 2:  # If the other decision was preferred
-        margin = 0.1
-        other_inputs = tokenizer(other_decision, return_tensors="pt", truncation=True, max_length=128)
-        other_inputs = {k: v.to(agent.device) for k, v in other_inputs.items()}
-        other_outputs = agent(**other_inputs, labels=other_inputs["input_ids"])
-        loss = torch.max(torch.tensor(0.0).to(agent.device), loss - other_outputs.loss + margin)
+            if judge_preference == 1:  # If this decision was preferred
+                margin = 0.1
+                other_inputs = tokenizer(other_decision, return_tensors="pt", truncation=True, max_length=128)
+                other_inputs = {k: v.to(agent.device) for k, v in other_inputs.items()}
+                other_outputs = agent(**other_inputs, labels=other_inputs["input_ids"])
+                loss = torch.max(torch.tensor(0.0).to(agent.device), other_outputs.loss - loss + margin)
+            elif judge_preference == 2:  # If the other decision was preferred
+                margin = 0.1
+                other_inputs = tokenizer(other_decision, return_tensors="pt", truncation=True, max_length=128)
+                other_inputs = {k: v.to(agent.device) for k, v in other_inputs.items()}
+                other_outputs = agent(**other_inputs, labels=other_inputs["input_ids"])
+                loss = torch.max(torch.tensor(0.0).to(agent.device), loss - other_outputs.loss + margin)
 
-    accelerator.backward(loss)
-    torch.nn.utils.clip_grad_norm_(agent.parameters(), max_norm=0.5)
+        accelerator.backward(loss)
+        torch.nn.utils.clip_grad_norm_(agent.parameters(), max_norm=0.5)
 
-    return loss.item()
+        return loss.item()
+    except Exception as e:
+        logger.error(f"Error in dpo_training_step: {str(e)}")
+        wandb.log({"training_step_error": str(e)})
+        return 0.0
 
-def train_agents_with_dpo(agent1, agent2, judge_model, tokenizer1, tokenizer2, judge_tokenizer, texts, args, accumulation_steps=4):
+def train_agents_with_dpo(agent1: torch.nn.Module, agent2: torch.nn.Module, judge_model: torch.nn.Module, 
+                          tokenizer1: AutoTokenizer, tokenizer2: AutoTokenizer, judge_tokenizer: AutoTokenizer, 
+                          texts: List[str], args: argparse.Namespace, accumulation_steps: int = 4) -> Tuple[torch.nn.Module, torch.nn.Module]:
+    """Train agents using DPO."""
     optimizer1 = AdamW(agent1.parameters(), lr=args.learning_rate)
     optimizer2 = AdamW(agent2.parameters(), lr=args.learning_rate)
     
@@ -138,8 +165,11 @@ def train_agents_with_dpo(agent1, agent2, judge_model, tokenizer1, tokenizer2, j
     correct_detections_agent1, correct_detections_agent2 = 0, 0
     total_samples = 0
 
+    wandb.config.update({"num_epochs": args.num_epochs, "batch_size": args.batch_size, "learning_rate": args.learning_rate, "num_samples": args.num_samples})
+
     for epoch in range(args.num_epochs):
         total_loss1, total_loss2 = 0, 0
+        epoch_start_time = time.time()
 
         for batch in tqdm(dataloader, desc=f"Training epoch {epoch+1}"):
             for text in batch:
@@ -174,14 +204,21 @@ def train_agents_with_dpo(agent1, agent2, judge_model, tokenizer1, tokenizer2, j
                 total_loss1 += loss1
                 total_loss2 += loss2
 
+                # Log metrics every 100 samples
+                if total_samples % 100 == 0:
+                    wandb.log({"running_loss_agent1": loss1, "running_loss_agent2": loss2, "total_samples": total_samples})
+
         avg_loss1 = total_loss1 / len(dataloader)
         avg_loss2 = total_loss2 / len(dataloader)
         detection_rate_agent1 = correct_detections_agent1 / total_samples
         detection_rate_agent2 = correct_detections_agent2 / total_samples
 
+        epoch_duration = time.time() - epoch_start_time
+
         logger.info(f"Epoch {epoch+1}: Loss Agent1 {avg_loss1:.4f}, Loss Agent2 {avg_loss2:.4f}")
         logger.info(f"Detection Rate: Agent1 {detection_rate_agent1:.4f}, Agent2 {detection_rate_agent2:.4f}")
         logger.info(f"Wins: Agent1 {wins1}, Agent2 {wins2}, Ties {ties}")
+        logger.info(f"Epoch duration: {epoch_duration:.2f} seconds")
 
         wandb.log({
             "epoch": epoch + 1,
@@ -191,38 +228,63 @@ def train_agents_with_dpo(agent1, agent2, judge_model, tokenizer1, tokenizer2, j
             "detection_rate_agent2": detection_rate_agent2,
             "wins_agent1": wins1,
             "wins_agent2": wins2,
-            "ties": ties
+            "ties": ties,
+            "epoch_duration": epoch_duration
         })
 
     return agent1, agent2
 
-def load_and_prepare_data(args):
-    dataset = load_dataset("tweet_eval", "sentiment", split="train", trust_remote_code=True)
-    texts = dataset["text"]
-    texts = [text for text in texts if len(text.strip()) > 10]
-    return texts[:args.num_samples]
+def load_and_prepare_data(args: argparse.Namespace) -> List[str]:
+    """Load and prepare data for training."""
+    try:
+        dataset = load_dataset("tweet_eval", "sentiment", split="train", trust_remote_code=True)
+        texts = dataset["text"]
+        texts = [text for text in texts if len(text.strip()) > 10]
+        wandb.config.update({"dataset": "tweet_eval_sentiment", "num_samples": len(texts[:args.num_samples])})
+        return texts[:args.num_samples]
+    except Exception as e:
+        logger.error(f"Error loading data: {str(e)}")
+        wandb.log({"data_loading_error": str(e)})
+        raise
 
-def main(args):
-    # Initialize wandb
+def main(args: argparse.Namespace):
+    """Main function to run the DPO training process."""
     wandb.init(project="llama-dpo-human-vs-ai-detection", config=args)
+    
+    try:
+        set_seed(args.seed)
+        
+        logger.info("Starting training...")
 
-    agent1, tokenizer1 = load_model_and_tokenizer(args.model_name_1, model_type="llama")
-    agent2, tokenizer2 = load_model_and_tokenizer(args.model_name_2, model_type="llama")
-    judge_model, judge_tokenizer = load_model_and_tokenizer(args.judge_model_name, model_type="classification")
+        agent1, tokenizer1 = load_model_and_tokenizer(args.model_name_1, model_type="llama")
+        agent2, tokenizer2 = load_model_and_tokenizer(args.model_name_2, model_type="llama")
+        judge_model, judge_tokenizer = load_model_and_tokenizer(args.judge_model_name, model_type="classification")
 
-    texts = load_and_prepare_data(args)
+        texts = load_and_prepare_data(args)
 
-    improved_agent1, improved_agent2 = train_agents_with_dpo(
-        agent1, agent2, judge_model, tokenizer1, tokenizer2, judge_tokenizer, texts, args
-    )
+        improved_agent1, improved_agent2 = train_agents_with_dpo(
+            agent1, agent2, judge_model, tokenizer1, tokenizer2, judge_tokenizer, texts, args
+        )
 
-    improved_agent1.save_pretrained(f"{args.output_dir}/agent1")
-    tokenizer1.save_pretrained(f"{args.output_dir}/agent1")
-    improved_agent2.save_pretrained(f"{args.output_dir}/agent2")
-    tokenizer2.save_pretrained(f"{args.output_dir}/agent2")
-    logger.info(f"Models saved to {args.output_dir}")
+        # Save models
+        output_dir1 = os.path.join(args.output_dir, "agent1")
+        output_dir2 = os.path.join(args.output_dir, "agent2")
+        os.makedirs(output_dir1, exist_ok=True)
+        os.makedirs(output_dir2, exist_ok=True)
 
-    wandb.finish()
+        improved_agent1.save_pretrained(output_dir1)
+        tokenizer1.save_pretrained(output_dir1)
+        improved_agent2.save_pretrained(output_dir2)
+        tokenizer2.save_pretrained(output_dir2)
+        
+        logger.info(f"Models saved to {args.output_dir}")
+        wandb.save(os.path.join(output_dir1, '*'))
+        wandb.save(os.path.join(output_dir2, '*'))
+                    
+    except Exception as e:
+        logger.error(f"Error in main function: {str(e)}")
+        wandb.log({"error": str(e)})
+        raise
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DPO Training for Human vs AI Text Detection")
@@ -234,6 +296,8 @@ if __name__ == "__main__":
     parser.add_argument("--learning_rate", type=float, default=5e-6, help="Learning rate")
     parser.add_argument("--num_samples", type=int, default=50, help="Number of samples")
     parser.add_argument("--output_dir", type=str, default="./llama_dpo_models", help="Directory to save the models")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
 
     args = parser.parse_args()
+
     main(args)
