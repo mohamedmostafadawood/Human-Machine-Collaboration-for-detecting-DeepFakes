@@ -1,4 +1,3 @@
-
 import torch
 from transformers import LlamaForCausalLM, AutoTokenizer
 from datasets import load_dataset
@@ -10,21 +9,22 @@ from torch.nn import functional as F
 from torch.optim import AdamW
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from torch.cuda.amp import autocast, GradScaler
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def load_model_and_tokenizer(model_name: str):
+def load_model_and_tokenizer(model_name: str, device: str):
     """Load the LLaMA model and tokenizer."""
     try:
         logger.info(f"Loading {model_name}...")
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = LlamaForCausalLM.from_pretrained(
             model_name, 
-            device_map="auto", 
+            device_map="auto" if device == "cuda" else None,
             load_in_8bit=False,
-            torch_dtype=torch.float32
+            torch_dtype=torch.float32  # Use float32 for all parameters
         )
 
         if tokenizer.pad_token is None:
@@ -33,159 +33,127 @@ def load_model_and_tokenizer(model_name: str):
         
         model.config.pad_token_id = tokenizer.pad_token_id
         
+        if device == "cpu":
+            model = model.to(device)
+        else:
+            # Ensure the model is using float32 parameters
+            model = model.float()
+        
         return model, tokenizer
     except Exception as e:
         logger.error(f"Error loading model {model_name}: {str(e)}")
         raise
 
-def prepare_input(text: str, tokenizer: AutoTokenizer):
+def prepare_input(text: str, label: str, tokenizer: AutoTokenizer):
     """Prepare input for the model."""
-    prompt = f"Is the following text human-written or AI-generated? Text: '{text}'. Reply with 'real' or 'fake'."
+    prompt = f"Is the following text human-written or AI-generated? Text: '{text}'. Reply with '{label}'."
     inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512, padding=True)
     return inputs
 
-def sanity_check_loss(loss_value):
-    """Perform a sanity check on the loss value."""
-    if not (0 <= loss_value <= 10):  # Adjust this range based on your specific use case
-        logger.warning(f"Unusual loss value detected: {loss_value}")
-    return 0 <= loss_value < float('inf')
-
-def train_model(model: torch.nn.Module, tokenizer: AutoTokenizer, train_data, val_data, num_epochs: int, learning_rate: float):
-    """Train the model using Cross-Entropy Loss with additional checks."""
+def train_model(model: torch.nn.Module, tokenizer: AutoTokenizer, train_data, val_data, num_epochs: int, learning_rate: float, device: str, batch_size: int, gradient_accumulation_steps: int):
+    """Train the model using direct fine-tuning with memory optimizations."""
     model.train()
     optimizer = AdamW(model.parameters(), lr=learning_rate)
+    scaler = GradScaler()
     
     train_losses = []
     val_losses = []
-    train_accuracies = []
-    val_accuracies = []
     
     for epoch in range(num_epochs):
         total_loss = 0
-        correct_predictions = 0
-        total_samples = 0
+        optimizer.zero_grad()
         
-        for text, label in tqdm(train_data, desc=f"Epoch {epoch+1}/{num_epochs}"):
-            inputs = prepare_input(text, tokenizer)
-            inputs = {k: v.to(model.device) for k, v in inputs.items()}
+        for i, (text, label) in enumerate(tqdm(train_data, desc=f"Epoch {epoch+1}/{num_epochs}")):
+            inputs = prepare_input(text, "real" if label == "human" else "fake", tokenizer)
+            inputs = {k: v.to(device) for k, v in inputs.items()}
 
-            # Prepare target
-            target = torch.tensor([1 if label == "human" else 0], dtype=torch.long).to(model.device)
+            # Forward pass with mixed precision
+            with autocast(enabled=device=="cuda"):
+                outputs = model(**inputs, labels=inputs["labels"])
+                loss = outputs.loss / gradient_accumulation_steps
 
-            # Forward pass
-            outputs = model(**inputs)
-            logits = outputs.logits[:, -1, :]  # Get logits for the last token
-            
-            loss = model.loss
+            # Backward pass with gradient scaling
+            scaler.scale(loss).backward()
 
-            # Compute Cross-Entropy Loss
-            loss = F.cross_entropy(logits, target)
+            if (i + 1) % gradient_accumulation_steps == 0:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                scaler.step(optimizer)
+                scaler.update()
+                optimizer.zero_grad()
 
-            # Sanity check
-            if not sanity_check_loss(loss.item()):
-                logger.error(f"Invalid loss detected: {loss.item()}. Skipping this batch.")
-                continue
-
-            # Backward pass (compute gradients)
-            optimizer.zero_grad()
-
-
-            # Update model parameters
-            optimizer.step()
-
-            total_loss += loss.item()
-            logger.debug(f"Batch loss: {loss.item()}")
-
-            # Calculate accuracy
-            predictions = torch.argmax(logits, dim=-1)
-            correct_predictions += (predictions == target).sum().item()
-            total_samples += target.size(0)
+            total_loss += loss.item() * gradient_accumulation_steps
 
         avg_train_loss = total_loss / len(train_data)
         train_losses.append(avg_train_loss)
         
-        train_accuracy = correct_predictions / total_samples
-        train_accuracies.append(train_accuracy)
-        
         # Validate on validation set
-        val_loss, val_accuracy = validate_model(model, tokenizer, val_data)
+        val_loss = validate_model(model, tokenizer, val_data, device, batch_size)
         val_losses.append(val_loss)
-        val_accuracies.append(val_accuracy)
         
         logger.info(f"Epoch {epoch+1} completed. "
-                    f"Train Loss: {avg_train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, "
-                    f"Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}")
+                    f"Train Loss: {avg_train_loss:.4f}, "
+                    f"Val Loss: {val_loss:.4f}")
 
-    plot_metrics(train_losses, val_losses, train_accuracies, val_accuracies)
+    plot_losses(train_losses, val_losses)
     return model
 
-def validate_model(model: torch.nn.Module, tokenizer: AutoTokenizer, val_data):
+def validate_model(model: torch.nn.Module, tokenizer: AutoTokenizer, val_data, device: str, batch_size: int):
     """Validate the model on a validation set."""
     model.eval()
     total_loss = 0
-    correct_predictions = 0
-    total_samples = 0
     
     with torch.no_grad():
-        for text, label in tqdm(val_data, desc="Validating"):
-            inputs = prepare_input(text, tokenizer)
-            inputs = {k: v.to(model.device) for k, v in inputs.items()}
+        for i in range(0, len(val_data), batch_size):
+            batch = val_data[i:i+batch_size]
+            texts, labels = zip(*batch)
+            
+            inputs = [prepare_input(text, "real" if label == "human" else "fake", tokenizer) for text, label in zip(texts, labels)]
+            input_ids = torch.cat([input['input_ids'] for input in inputs], dim=0).to(device)
+            attention_mask = torch.cat([input['attention_mask'] for input in inputs], dim=0).to(device)
 
-            target = torch.tensor([1 if label == "human" else 0], dtype=torch.long).to(model.device)
-
-            outputs = model(**inputs)
-            logits = outputs.logits[:, -1, :]
-
-            loss = F.cross_entropy(logits, target)
-            total_loss += loss.item()
-
-            predictions = torch.argmax(logits, dim=-1)
-            correct_predictions += (predictions == target).sum().item()
-            total_samples += target.size(0)
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask, labels=input_ids)
+            loss = outputs.loss
+            total_loss += loss.item() * len(batch)
 
     avg_loss = total_loss / len(val_data)
-    accuracy = correct_predictions / total_samples
-    return avg_loss, accuracy
+    return avg_loss
 
-def plot_metrics(train_losses, val_losses, train_accuracies, val_accuracies):
-    """Plot training and validation losses and accuracies."""
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
-    
-    ax1.plot(train_losses, label='Training Loss')
-    ax1.plot(val_losses, label='Validation Loss')
-    ax1.set_xlabel('Epoch')
-    ax1.set_ylabel('Loss')
-    ax1.set_title('Training and Validation Loss Over Time')
-    ax1.legend()
-    
-    ax2.plot(train_accuracies, label='Training Accuracy')
-    ax2.plot(val_accuracies, label='Validation Accuracy')
-    ax2.set_xlabel('Epoch')
-    ax2.set_ylabel('Accuracy')
-    ax2.set_title('Training and Validation Accuracy Over Time')
-    ax2.legend()
-    
-    plt.tight_layout()
-    plt.savefig('training_metrics.png')
-    logger.info("Training metrics plot saved as 'training_metrics.png'")
+def plot_losses(train_losses, val_losses):
+    """Plot training and validation losses."""
+    plt.figure(figsize=(10, 5))
+    plt.plot(train_losses, label='Training Loss')
+    plt.plot(val_losses, label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss Over Time')
+    plt.legend()
+    plt.savefig('loss_plot.png')
+    logger.info("Loss plot saved as 'loss_plot.png'")
 
-def evaluate_model(model: torch.nn.Module, tokenizer: AutoTokenizer, test_data):
+def evaluate_model(model: torch.nn.Module, tokenizer: AutoTokenizer, test_data, device: str, batch_size: int):
     """Evaluate model on the test set and compute various metrics."""
     model.eval()
     all_preds = []
     all_labels = []
 
-    for text, label in tqdm(test_data, desc="Evaluating"):
-        inputs = prepare_input(text, tokenizer)
-        inputs = {k: v.to(model.device) for k, v in inputs.items()}
-        
-        with torch.no_grad():
-            outputs = model(**inputs)
+    with torch.no_grad():
+        for i in range(0, len(test_data), batch_size):
+            batch = test_data[i:i+batch_size]
+            texts, labels = zip(*batch)
+            
+            inputs = [prepare_input(text, "real" if label == "human" else "fake", tokenizer) for text, label in zip(texts, labels)]
+            input_ids = torch.cat([input['input_ids'] for input in inputs], dim=0).to(device)
+            attention_mask = torch.cat([input['attention_mask'] for input in inputs], dim=0).to(device)
+
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
             logits = outputs.logits[:, -1, :]
-            prediction = torch.argmax(logits, dim=-1).item()
-        
-        all_preds.append(prediction)
-        all_labels.append(1 if label == "human" else 0)
+            predicted_tokens = torch.argmax(logits, dim=-1)
+            predicted_words = tokenizer.batch_decode(predicted_tokens.unsqueeze(-1), skip_special_tokens=True)
+            predictions = [1 if word.strip() == "real" else 0 for word in predicted_words]
+
+            all_preds.extend(predictions)
+            all_labels.extend([1 if label == "human" else 0 for label in labels])
 
     accuracy = accuracy_score(all_labels, all_preds)
     precision = precision_score(all_labels, all_preds, average='binary')
@@ -200,15 +168,18 @@ def evaluate_model(model: torch.nn.Module, tokenizer: AutoTokenizer, test_data):
     return accuracy, precision, recall, f1
 
 def main(args):
+    device = "cuda" if torch.cuda.is_available() and not args.cpu else "cpu"
+    logger.info(f"Using device: {device}")
+
     # Load model and tokenizer
-    model, tokenizer = load_model_and_tokenizer(args.model_name)
+    model, tokenizer = load_model_and_tokenizer(args.model_name, device)
 
     # Load AI text detection dataset
     dataset = load_dataset("artem9k/ai-text-detection-pile", split="train")
     logger.info(f"Loaded dataset with {len(dataset)} samples.")
 
     # Convert dataset to a list and take only 20,000 samples
-    dataset_list = list(zip(dataset['text'], dataset['source']))[:20000]
+    dataset_list = list(zip(dataset['text'], dataset['source']))[:5000]
 
     # Split the data into train/val/test sets
     train_data, temp_data = train_test_split(dataset_list, test_size=0.4, random_state=args.seed)
@@ -216,17 +187,20 @@ def main(args):
     logger.info(f"Training on {len(train_data)} samples, validating on {len(val_data)} samples, testing on {len(test_data)} samples.")
 
     # Train the model
-    model = train_model(model, tokenizer, train_data, val_data, args.num_epochs, args.learning_rate)
+    model = train_model(model, tokenizer, train_data, val_data, args.num_epochs, args.learning_rate, device, args.batch_size, args.gradient_accumulation_steps)
 
     # Evaluate model on the test set
-    accuracy, precision, recall, f1 = evaluate_model(model, tokenizer, test_data)
+    accuracy, precision, recall, f1 = evaluate_model(model, tokenizer, test_data, device, args.batch_size)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="CEL-Optimized AI Text Detection")
+    parser = argparse.ArgumentParser(description="LLaMA Fine-tuning with FP32 Gradients")
     parser.add_argument("--model_name", type=str, default="meta-llama/Llama-3.2-1B", help="Name of the model to use")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
     parser.add_argument("--num_epochs", type=int, default=3, help="Number of training epochs")
     parser.add_argument("--learning_rate", type=float, default=1e-5, help="Learning rate for optimization")
+    parser.add_argument("--batch_size", type=int, default=1, help="Batch size for training and evaluation")
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=8, help="Number of steps to accumulate gradients")
+    parser.add_argument("--cpu", action="store_true", help="Use CPU instead of GPU")
     args = parser.parse_args()
 
     main(args)
