@@ -6,3 +6,6 @@
 wandb: WARNING Symlinked 6 files into the W&B run directory, call wandb.save again to sync new files.
 wandb: WARNING Symlinked 6 files into the W&B run directory, call wandb.save again to sync new files.
 wandb: 🚀 View run pretty-rain-3 at: https://wandb.ai/mohamedmostafa-official0-mbzuai/llama-dpo-human-vs-ai-detection/runs/vwojzdw4
+
+
+cross-entropy loss.
