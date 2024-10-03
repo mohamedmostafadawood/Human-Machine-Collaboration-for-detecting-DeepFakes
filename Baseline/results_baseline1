@@ -1,0 +1,606 @@
+2024-10-03 13:52:08,584 - Loading meta-llama/Llama-3.2-1B...
+2024-10-03 13:52:11,953 - Setting pad_token to eos_token.
+2024-10-03 13:52:35,259 - Loaded dataset with 1392522 samples.
+2024-10-03 13:52:41,423 - Using 278505 samples for evaluation.
+2024-10-03 13:52:41,979 - Text: The following excerpt contains spoilers for Star Wars: The Last Jedi.
+
+The Last Jedi is the latest e... | True Label: fake | Model Decision: real
+2024-10-03 13:52:42,073 - Text: A federal court Tuesday threw out an indictment against a Kentucky couple, saying that their convict... | True Label: fake | Model Decision: real
+2024-10-03 13:52:42,176 - Text: ``Ethan, we need to talk.'' 
+ I snap out of my thoughts and look around. The class bell had rang a f... | True Label: real | Model Decision: real
+2024-10-03 13:52:42,442 - Text: 
+"They want to put them on the shelf."
+
+When it rains $300 Million Dollars
+
+by Brian Dunning
+
+Filed ... | True Label: fake | Model Decision: real
+2024-10-03 13:52:42,538 - Text: same day. It was only a week later when she made her second kill. This one she had planned. A busine... | True Label: real | Model Decision: real
+2024-10-03 13:52:42,710 - Text: *Goddammit! Not again! Every fucking time! * 
+ 
+ ``ZEUS! HEY ZEUS!'' 
+ 
+ ``What's up?'' 
+ 
+ *Oh so h... | True Label: real | Model Decision: real
+2024-10-03 13:52:42,805 - Text: [ slightly off topic ] my friend told me recently that when she was younger her mum got a phone call... | True Label: real | Model Decision: real
+2024-10-03 13:52:42,961 - Text: From Zelda Wiki, the Zelda encyclopedia
+
+The Light Spirit is a character featured in Skyward Sword.[... | True Label: fake | Model Decision: real
+2024-10-03 13:52:43,061 - Text: Leadership in Practice: Leading Teams Essay (Critical Writing)
+
+The challenge of guiding the team pr... | True Label: real | Model Decision: real
+2024-10-03 13:52:43,214 - Text: l slaughter anyone who stands in our way.'' sneered the trickster at the lord of Hell. Lucifer's mig... | True Label: real | Model Decision: real
+2024-10-03 13:52:43,376 - Text: The Instrumental Theory in Criminal Justice Essay
+
+In criminal justice, the instrumental theory is b... | True Label: real | Model Decision: real
+2024-10-03 13:52:43,520 - Text: The teams will participate in a shortened 2017 season - kicking off on the week ending August 20 - b... | True Label: real | Model Decision: real
+2024-10-03 13:52:43,677 - Text: Copyright Law in UAE Research Paper
+
+What is Copyright?
+
+Copyright is a legal term under many intell... | True Label: real | Model Decision: real
+2024-10-03 13:52:43,837 - Text: MADISON, Wis. (AP) — A federal judge on Thursday ruled that Wisconsin has to recognize a Wisconsin g... | True Label: fake | Model Decision: real
+2024-10-03 13:52:43,938 - Text: I've woken up again tonight. It's been three months since I found out that my vision loss is due to.... | True Label: real | Model Decision: real
+2024-10-03 13:52:44,091 - Text: phenomenal time. So we weren't really going to complain. 
+ 
+ All ten of us were taken to Moscow. Rus... | True Label: real | Model Decision: real
+2024-10-03 13:52:44,250 - Text: **Sorry this is late, here is my take ( split into 2 comments) : ** 
+ 
+ 
+ ``Can you remember a time ... | True Label: real | Model Decision: real
+2024-10-03 13:52:44,344 - Text: pendence. 
+ 
+ However, it wasn't long before he noticed that his water supply was leaking steadily, ... | True Label: real | Model Decision: real
+2024-10-03 13:52:44,502 - Text: 
+
+
+ How long have you held an American citizenship?... | True Label: fake | Model Decision: real
+2024-10-03 13:52:44,600 - Text: in the facility. I could build customised illnesses from these tiny building blocks, giving an almos... | True Label: real | Model Decision: real
+2024-10-03 13:52:44,692 - Text: As much as they would like to think of themselves as above these matters, we are bound to recognize ... | True Label: fake | Model Decision: real
+2024-10-03 13:52:44,857 - Text: (written from a Production point of view Real World article
+
+Captain Picard and Data examine a subsp... | True Label: fake | Model Decision: real
+2024-10-03 13:52:44,953 - Text: I think the best way to describe my view of the new "Masters" series is that the most important feat... | True Label: fake | Model Decision: real
+2024-10-03 13:52:45,049 - Text: The World Cup is getting closer with four days to go until the kick-off of the competition in a matc... | True Label: fake | Model Decision: real
+2024-10-03 13:52:45,218 - Text: 
+[My] [interview] [job] [prep] [for] [[1] [2] [3] [4] [5] [6] [7] [8] [9] [10] [11] [12] [13] [14] [... | True Label: fake | Model Decision: real
+2024-10-03 13:52:45,314 - Text: not only socially outcaste, they were bully hard and suffered being treated less favourably by teach... | True Label: real | Model Decision: real
+2024-10-03 13:52:45,471 - Text: Dead Sea Scrolls Collection Review Essay
+
+Dead Sea Scrolls is one of the most important collections ... | True Label: real | Model Decision: real
+2024-10-03 13:52:45,565 - Text: Have you tried a walking or biking exercise routine?  They're great ways to get in shape!... | True Label: fake | Model Decision: real
+2024-10-03 13:52:45,663 - Text: The period of his ministry in Germany is given by Jordan, Anal.
+
+In this case the Anal Area of one T... | True Label: real | Model Decision: real
+2024-10-03 13:52:45,757 - Text:  The national bird of India is the Peacock.... | True Label: fake | Model Decision: real
+2024-10-03 13:52:45,914 - Text: esuming his stoic silence. 
+ 
+ ``If I may be so bold,'' I began, ``Perhaps a decision made in a hast... | True Label: real | Model Decision: real
+2024-10-03 13:52:46,005 - Text: throat. He choked. His hands impulsively held his throat like it try to straighten his air pipe. The... | True Label: real | Model Decision: real
+2024-10-03 13:52:46,101 - Text: Glimmer + glow with a radiant complexion with this stunning highlighter kit by Anastasia Beverly Hil... | True Label: real | Model Decision: real
+2024-10-03 13:52:46,260 - Text: The use of 60 as a base for measuring time can be traced back to ancient civilizations. The Babyloni... | True Label: fake | Model Decision: real
+2024-10-03 13:52:46,356 - Text: This is a list of all of my previous video game reviews. These reviews are written from a perspectiv... | True Label: fake | Model Decision: real
+2024-10-03 13:52:46,451 - Text: Well, my siblings may tell you otherwise, but I still have a pretty interesting time. I've got a kid... | True Label: real | Model Decision: real
+2024-10-03 13:52:46,544 - Text: comfortable immediately as he towered over me, his eyes burning holes into me and his smile as mocki... | True Label: real | Model Decision: real
+2024-10-03 13:52:46,638 - Text: ymore. The whole world is waking up outside, I hate when you here the sounds of the birds singing, I... | True Label: real | Model Decision: real
+2024-10-03 13:52:46,799 - Text: ``Can anyone tell me what brought about the end of Borag the Terrible's thousand year reign?'' asked... | True Label: real | Model Decision: real
+2024-10-03 13:52:46,958 - Text: 
+
+The rules of chess are fairly simple. Each player has 16 pieces: a king, a queen, two rooks, two k... | True Label: fake | Model Decision: real
+2024-10-03 13:52:47,117 - Text: I lost everything that day, my life, my love, my home, my money. I was now a bum on the street, begg... | True Label: real | Model Decision: real
+2024-10-03 13:52:47,274 - Text: Crime Policy and Practices: Trying Juveniles as Adults Term Paper
+
+Introduction
+
+The President and C... | True Label: real | Model Decision: real
+2024-10-03 13:52:47,370 - Text: John was a master of regret. His mantra was ``if I had only knew then what I know now...''. One part... | True Label: real | Model Decision: real
+2024-10-03 13:52:47,528 - Text: T*here is no concrete evidence that proves how the Awakening first occurred. * 
+ 
+ *Nothing about it... | True Label: real | Model Decision: real
+2024-10-03 13:52:47,686 - Text: o... one... 
+ 
+ I stood up abruptly, taking my wooden chair with me to use as a shield. Behind me, I... | True Label: real | Model Decision: real
+2024-10-03 13:52:47,840 - Text: again as if waiting for more. 
+ 
+ Johnny stood, panting, and shocked. All that training, and for wha... | True Label: real | Model Decision: real
+2024-10-03 13:52:47,933 - Text: sees a half smile form on her lips. He feels her eyes on him, and although he is terrified he forces... | True Label: real | Model Decision: real
+2024-10-03 13:52:48,028 - Text:  that we can help each other. If in agreement, please sign below on the line. ” The letter was signe... | True Label: real | Model Decision: real
+2024-10-03 13:52:48,185 - Text: ``Name your desire mortal scum, waking me up at such hours, this is my daily happy place time'' 
+ 
+ ... | True Label: real | Model Decision: real
+2024-10-03 13:52:48,346 - Text: When you're in a new city, alone and young and afraid, you may wonder about how you could potentiall... | True Label: real | Model Decision: real
+2024-10-03 13:52:48,502 - Text: Brent Musburger is a broadcaster with the most appearances of any broadcaster on any ESPN program. I... | True Label: fake | Model Decision: real
+2024-10-03 13:52:48,598 - Text: Git and Github's new collaboration is not new. While there have been other cross-project collaborati... | True Label: fake | Model Decision: real
+2024-10-03 13:52:48,755 - Text: d I held hands and lead the gang to our entry point. 
+ 
+ If only I knew what was going to happen. 
+ ... | True Label: real | Model Decision: real
+2024-10-03 13:52:48,914 - Text: 
+The best way to quit smoking cigarettes is to develop a personalized quitting plan that is tailored... | True Label: fake | Model Decision: real
+2024-10-03 13:52:49,078 - Text: “ How long has Pete been here, Hank? ” 
+ 
+ “ Dogs! Bill, I don ’ t know. Do I look like the warden? ... | True Label: real | Model Decision: real
+2024-10-03 13:52:49,235 - Text:  all. 
+ 
+ 
+ Everything went still then, the first time for the day. A blur filled my vision, focusin... | True Label: real | Model Decision: real
+2024-10-03 13:52:49,331 - Text: I've never been a fan of the idea of "safe spaces"—whereby one must not ask difficult questions or b... | True Label: fake | Model Decision: real
+2024-10-03 13:52:49,426 - Text:   If you want to spend money while visiting the supermarket, it’s a good idea to think about ways to... | True Label: fake | Model Decision: real
+2024-10-03 13:52:49,521 - Text: ``I can't believe these morons'', Donald Trump exclaims to several staff people anxiously sitting ar... | True Label: real | Model Decision: real
+2024-10-03 13:52:49,685 - Text: 
+Some natural ways to improve your skin include: drinking plenty of water, eating a balanced diet, e... | True Label: fake | Model Decision: real
+2024-10-03 13:52:49,783 - Text: Add Giants starter Madison Bumgarner to the list of players entering the 2018 season in the best sha... | True Label: real | Model Decision: real
+2024-10-03 13:52:49,876 - Text: Charles came out from the back when he heard the bell on the counter. A plain, middle-aged man was a... | True Label: real | Model Decision: real
+2024-10-03 13:52:50,034 - Text: He licked his lips and stood back to admire his handiwork. 
+ The cube sat neatly on top of a pile of... | True Label: real | Model Decision: real
+2024-10-03 13:52:50,190 - Text:  I've always been the quick witted guy. I continued with my previous thought, *'' i'm almost PAWSITI... | True Label: real | Model Decision: real
+2024-10-03 13:52:50,353 - Text: 
+ I was finishing up my studies for international business when I turned 21. I was at a party in my ... | True Label: real | Model Decision: real
+2024-10-03 13:52:50,448 - Text: There was only darkness, and memories. I had a dream. I was in the gym, but I was outside my body, s... | True Label: real | Model Decision: real
+2024-10-03 13:52:50,604 - Text:  please --'' 
+ 
+ 
+ This time, I was the one who was interrupted. ``You know these people. Yes?'' 
+ 
+... | True Label: real | Model Decision: real
+2024-10-03 13:52:50,761 - Text: Kermes is a genus of flowering plant in the family Lamiaceae. There are approximately 20 genera and ... | True Label: fake | Model Decision: real
+2024-10-03 13:52:50,922 - Text: 
+The different types of careers available in computer science include software engineering, systems ... | True Label: fake | Model Decision: real
+2024-10-03 13:52:51,081 - Text:  trying to find the one to make my mark disappear. I am a factory line worker in a car factory. My j... | True Label: real | Model Decision: real
+2024-10-03 13:52:51,237 - Text: There are many factors that can contribute to differences in taste in music, and it's not just about... | True Label: fake | Model Decision: real
+2024-10-03 13:52:51,332 - Text: The man had walked past her house every morning, his droopy labrador plodding by his side. Haile had... | True Label: real | Model Decision: real
+2024-10-03 13:52:51,486 - Text: "There is no truth or truth to the story we are hearing from certain media organizations and others.... | True Label: fake | Model Decision: real
+2024-10-03 13:52:51,643 - Text: The Abrahamic God laughed heartily to the multitude of Pantheons before him. ``BETWEEN THE MUSLIMS, ... | True Label: real | Model Decision: real
+2024-10-03 13:52:51,802 - Text: A couple who were caught trying to smuggle drugs into Mexico have appeared in court to face possible... | True Label: fake | Model Decision: real
+2024-10-03 13:52:51,896 - Text: A rock. A goddamned piece of shit is what they were calling God. That didn't stop everyone from taki... | True Label: real | Model Decision: real
+2024-10-03 13:52:52,053 - Text: We are attempting to give it to you... does it not please you? ” 
+ 
+ The Gods turned to examine the ... | True Label: real | Model Decision: real
+2024-10-03 13:52:52,215 - Text: ITH INANIMATE OBJECTS, PRESS *TWO*'' 
+ 
+ Jim started, ``Wait, maybe it's considered an ``inanimate r... | True Label: real | Model Decision: real
+2024-10-03 13:52:52,373 - Text:  
+ I know what you're thinking. ``You're an idiot. People are *vanishing* doing exactly what you wer... | True Label: real | Model Decision: real
+2024-10-03 13:52:52,534 - Text: e. We quickly became the best of friends, and our friendship lasted for years. We went through good ... | True Label: real | Model Decision: real
+2024-10-03 13:52:52,692 - Text: A woman who was shot and killed by a Houston police officer earlier this month was allegedly "wantin... | True Label: fake | Model Decision: real
+2024-10-03 13:52:52,782 - Text: HTC is the latest member of Motorola's Droid family to release new Moto G smartphones, and they will... | True Label: fake | Model Decision: real
+2024-10-03 13:52:52,941 - Text: n “ Yeah, I mean, it might be dangerous. We should be careful, ” Mickey rubbed his shoulder as he lo... | True Label: real | Model Decision: real
+2024-10-03 13:52:53,098 - Text: is soulmate just five days after turning 18 my mom started to worry. 
+ 
+ You are getting on in your ... | True Label: real | Model Decision: real
+2024-10-03 13:52:53,254 - Text: Oh, this is a fun SatChat ; I love reading all the ideas! 
+ 
+ There are approximately a billion stor... | True Label: real | Model Decision: real
+2024-10-03 13:52:53,413 - Text: If you are n't at risking of starving to death , getting killed in a war , or dying from simple inju... | True Label: real | Model Decision: real
+2024-10-03 13:52:53,509 - Text: American Military University: The Ultimate Advantage Is an Educated Mind Presentation
+
+Accredetation... | True Label: real | Model Decision: real
+2024-10-03 13:52:53,601 - Text: SpaceX may have canceled its mission to Mars with a Red Dragon capsule that was set for 2020.
+
+Compa... | True Label: real | Model Decision: real
+2024-10-03 13:52:53,698 - Text: The New York trading floor fell into a stunned silence. I stared at the scrolling information like a... | True Label: real | Model Decision: real
+2024-10-03 13:52:53,793 - Text: Pamela Geller is the President of the American Freedom Defense Initiative (AFDI), publisher of Pamel... | True Label: fake | Model Decision: real
+2024-10-03 13:52:53,952 - Text: , we only need to run a few more trials before we see FDA approval. This could change his life, and ... | True Label: real | Model Decision: real
+2024-10-03 13:52:54,112 - Text: The Impacts of the Bureaucracy in “Catch-22 Explained” Essay
+
+Introduction
+
+The video clip “Catch-22... | True Label: real | Model Decision: real
+2024-10-03 13:52:54,269 - Text: How do you explain an otherwise ordinary, normal guy, who would be considered a complete psychopath ... | True Label: fake | Model Decision: real
+2024-10-03 13:52:54,428 - Text: Translations Based on Galatians Essay (Critical Writing)
+
+Table of Contents
+ 1. Introduction
+ 2. Exe... | True Label: real | Model Decision: real
+2024-10-03 13:52:54,524 - Text: In an exclusive interview with The Nation, a former senior administration official said that the Sta... | True Label: fake | Model Decision: real
+2024-10-03 13:52:54,682 - Text: TRENTON, N.J. (CBSNewYork/AP) — The Port Authority of New York and New Jersey continues to take an a... | True Label: real | Model Decision: real
+2024-10-03 13:52:54,841 - Text: Ja'far bin Muhammad reported on the authority of his father "We entered upon Jabir bin 'Abd Allaah. ... | True Label: real | Model Decision: real
+2024-10-03 13:52:55,003 - Text: The Custom Woody Company Management Essay
+
+This paper outlines various aspects required for the effe... | True Label: real | Model Decision: real
+2024-10-03 13:52:55,097 - Text: Bright light stabs at me as my conscious mind regains control. There's a stabbing pain behind my eye... | True Label: real | Model Decision: real
+2024-10-03 13:52:55,262 - Text: “ I ’ d like to start by saying that I don ’ t do this kind of thing very often, if I can avoid it. ... | True Label: real | Model Decision: real
+2024-10-03 13:52:55,262 - Processed 100 samples
+2024-10-03 13:52:55,262 - Accuracy: 0.6800
+2024-10-03 13:52:55,263 - Final Accuracy: 0.6800
+2024-10-03 14:02:06,464 - Loading meta-llama/Llama-3.2-1B...
+2024-10-03 14:02:09,773 - Setting pad_token to eos_token.
+2024-10-03 14:02:28,908 - Loaded dataset with 1392522 samples.
+2024-10-03 14:02:35,094 - Using 278505 samples for evaluation.
+2024-10-03 14:02:35,860 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'the following excerpt contains spoilers for star wars: the last jedi.
+
+the last jedi is the latest entry in the franchise that once was the home to a small core of loyal actors (george lucas and irvin kershner), but has been in a state of steady decline for a few decades now after the failures of the phantom menace and attack of the clones. i would have been happy to read that this film would be the year of the star wars reboot—even the postelection period—but i was not hoping for a hit that would do a whole lot to turn this franchise around. with that, we'll get to my review.
+
+star wars has a fairly checkered history between the two trilogies, with the phantom menace and attack of the clones (the first two films in the original trilogy) being largely the product of george lucas's creative vision alone. in contrast the force awakens, the last jedi, and the third part of the original trilogy (a new hope) were made entirely by kathleen kennedy, who was heavily influenced by her experiences making the previous two films, as well as the original trilogy, with which she had been in close contact. with that said, when it comes to a franchise as hugely popular as star wars there is no telling what will happen in the last jedi. with that in mind, is this new version of star wars different enough from what happened in past stories to attract a new fanbase? was this movie as bad as the reviews indicated?
+
+let's start with what the reviews said:
+
+advertisement
+
+i have no problem with all of these ratings, but the bottom line is that there were a lot of people who were happy to simply hear carrie fisher and mark hamill return, but there were a lot of people who thought episode viii would be worse than what had come before. while i won't necessarily argue with those people—i would have been happier with leia dying in a fire explosion—there were a lot of people who felt star wars: the force awakens was good enough in its own right that they couldn't stand that last jedi. it's also interesting to note that despite having high expectations for this new installment many people also didn't think it was an "a-" film on par with a new hope, meaning that despite being critically praised the film fell short of the original trilogy's bar.
+
+star wars: the last jedi is the fifth installment in the star wars franchise. it is the twenty-third movie produced by lucasfilm and
+2024-10-03 14:02:35,860 - Text: The following excerpt contains spoilers for Star Wars: The Last Jedi.
+
+The Last Jedi is the latest e... | True Label: fake | Model Decision: None
+2024-10-03 14:02:36,053 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'a federal court tuesday threw out an indictment against a kentucky couple, saying that their conviction in a 2012 murder carried with it vague language that prevented them from proving the charges on which they'd been convicted.
+
+u.s. district judge david hale in lexington said "a person is not guilty of murder based on 'implied malice' if the alleged murderer knew the circumstances of a murder were likely to occur. we conclude that the indictment lacks sufficient express language requiring a knowing and intent element and it therefore fails to state a sufficient charge," according to the associated press.
+
+in 2012, richard matt and amanda blackburn were accused of killing their son's father, brent d. brown, with their bare hands in a lexington home.
+
+authorities said that the couple entered the wrong house looking for drugs and "witnessed the murder taking place."
+
+an indictment against the couple stated that when investigators arrived at the scene, both blackburns admitted they'd killed brent brown.
+
+prosecutors said that in the hours following the killing, william h. blackburn, richard matt and a friend were seen on cctv video watching the murder through a kitchen window. the friend said he saw no blood or other signs of a struggle, prosecutors said. no weapons were recovered.
+
+the couple's lawyers argued that the indictment lacked an element called a requirement of knowledge or intent.
+
+prosecutors argued that the indictment needed "implied malice" because the law allowed judges to consider evidence of other people's "acts" when deciding whether someone acted with criminal negligence — the intent level of a murder.
+
+"the indictment alleges that the defendants allegedly killed their son's father in an unmitigated fashion, but this court remains unconvinced that those elements have been made out. instead, the indictment alleges a combination of facts that are inconsistent with the indictment defendants claim occurred during and immediately following the alleged killings," hale stated.
+
+authorities haven't alleged "any facts establishing an agreement between defendants to participate together in the alleged murders, a conspiracy among defendants to commit murder, an intent by defendants to kill a victim, or any knowledge or intent by defendants that their conduct had the effect of bringing about the murder or attempted murder that is alleged with regard to [brent brown]," hale wrote.
+
+"it appears that the indictment did not allege any facts demonstrating that both mr. blackburn and [william h.] blackburn did not know, and had no reasonable basis for assuming, that the killings occurring at [sic] the residence where brent's father was killed were likely to
+2024-10-03 14:02:36,053 - Text: A federal court Tuesday threw out an indictment against a Kentucky couple, saying that their convict... | True Label: fake | Model Decision: None
+2024-10-03 14:02:36,162 - Text: ``Ethan, we need to talk.'' 
+ I snap out of my thoughts and look around. The class bell had rang a f... | True Label: real | Model Decision: real
+2024-10-03 14:02:36,343 - Text: 
+"They want to put them on the shelf."
+
+When it rains $300 Million Dollars
+
+by Brian Dunning
+
+Filed ... | True Label: fake | Model Decision: real
+2024-10-03 14:02:36,507 - Text: same day. It was only a week later when she made her second kill. This one she had planned. A busine... | True Label: real | Model Decision: real
+2024-10-03 14:02:36,611 - Text: *Goddammit! Not again! Every fucking time! * 
+ 
+ ``ZEUS! HEY ZEUS!'' 
+ 
+ ``What's up?'' 
+ 
+ *Oh so h... | True Label: real | Model Decision: real
+2024-10-03 14:02:36,778 - Text: [ slightly off topic ] my friend told me recently that when she was younger her mum got a phone call... | True Label: real | Model Decision: real
+2024-10-03 14:02:36,951 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'from zelda wiki, the zelda encyclopedia
+
+the light spirit is a character featured in skyward sword.[5][6] he is link's ancestor and the reincarnation of the triforce. link obtains the light spirit by using the magical mirror found on the great bay temple in order to link with the goddess hylia and his past self, and thus becoming a part of hylia's light force. it is implied that link's light spirit possesses the power of three (the light spirit has the power of three; the mirror is the "triforce"[7]).
+
+biography
+
+spoiler warning : plot or ending details follow.
+
+upon link's return with the power of the triforce, hylia instructs him to restore the triforce to its original form.[8] when link obtains the triforce in skyward sword, he is able to use its energy to create the mirror of twilight, a device that transports him back to the land of hyrule, where he obtains the light spirit's mirror from his ancestor the hero of time. thus, link becomes hylia's reincarnated ancestor.[9]
+
+in twilight princess
+
+as the master sword is broken and link is powerless to defend himself against the dark beasts attacking hyrule, it is the light spirit that shows up in the temple of time and helps him escape the dark beasts. in one of the ending cutscene hylia is shown to be alive and well in the temple of time and talks to link and mentions that link is his reincarnation and tells link that he has returned to save his master.[4] later in link's story, link encounters hyleas, the spirit of his ancestor, to whom hylia gives him the light spirit's mirror.
+
+in skyward sword
+
+after link defeats ganondorf, the skyward sword returns him to his true self in the skyward sword, where hylia tells him that his true name is link.[10] he tells that he was chosen by the goddess hylia for a "great destiny."[11] at the end of the game, it is revealed that he is a reincarnation of the hero of time which hints to the idea that he is also hylia.
+
+in ocarina of time
+
+in ocarina of time, after link defeats the final boss the goddess hylia appears to him in a vision, and tells him to use the triforce on the great
+2024-10-03 14:02:36,951 - Text: From Zelda Wiki, the Zelda encyclopedia
+
+The Light Spirit is a character featured in Skyward Sword.[... | True Label: fake | Model Decision: None
+2024-10-03 14:02:37,123 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'leadership in practice: leading teams essay (critical writing)
+
+the challenge of guiding the team properly has always been one of the most complex encounters for leaders all over the world. an excellent leader should also be able to recognise the ways of guiding not only his or her team but the changes that the company and the workers undergo (nichols 2016). every member of the team should be inspired by the leader, and the main goal of the latter is to convey his or her view to the employees. the two articles reviewed before writing this paper reflect on the current state of affairs in the field of leadership theories and practices.
+
+hannah, sumanth, lester, and cavarretta dwell on the issues connected to the appearance of new leadership theories and explain the pragmatic backgrounds of contemporary leadership styles (hannah et al. 2014). the article written by leduc, guilbert, and vallery tells about the valuable benefits of information and communication technologies when they are applied to the leadership practices. the authors of the article explain the importance of the icts in the modern leadership setting and state that the use of it increases the efficiency of the leadership style and helps visualise the necessary information in a proper way (leduc et al. 2015).
+
+in order to successfully overcome the present global issue of guiding change, the author proposes to employ situational leadership. this practice is exceptionally useful for the reason of its flexibility. this basically means that the leader will be able to take an exclusive approach to any given employee and manage the team as efficient as ever.
+
+the leader should be highly concerned about the current situation in the company and understand the relations within the team in order to guide the change. most importantly, the leadership practice should be linked to the situation, not to the organisation. by accepting this, the leader will be able to switch his or her leadership style according to the circumstances instead of his or her subjective view of the company.
+
+the article by hannah et al. describes how classic leadership styles can be turned into new practices and reviews the possible issues of implementing these practices in the organisations of all sizes. the authors of the article explain the idealistic point of view on the leadership and propose their ways of overcoming these practical complications (hannah et al. 2014). this article can help meet the challenge of guiding the change as it presents relevant evidence concerning effective team management and reflects the approach that involves situational leadership.
+
+the article by leduc et al. thoroughly describes the
+2024-10-03 14:02:37,123 - Text: Leadership in Practice: Leading Teams Essay (Critical Writing)
+
+The challenge of guiding the team pr... | True Label: real | Model Decision: None
+2024-10-03 14:02:37,336 - Text: l slaughter anyone who stands in our way.'' sneered the trickster at the lord of Hell. Lucifer's mig... | True Label: real | Model Decision: real
+2024-10-03 14:02:37,506 - Text: The Instrumental Theory in Criminal Justice Essay
+
+In criminal justice, the instrumental theory is b... | True Label: real | Model Decision: real
+2024-10-03 14:02:37,611 - Text: The teams will participate in a shortened 2017 season - kicking off on the week ending August 20 - b... | True Label: real | Model Decision: real
+2024-10-03 14:02:37,783 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'copyright law in uae research paper
+
+what is copyright?
+
+copyright is a legal term under many intellectual property statutes. the term means that the creator of a work that must be original has the right to that work. the rights under copyright law are exclusive and last for a specified period of time. the right has many other rights that accrue from it.
+
+they include the right to be credited in instances where the piece of work is used. the copyright holder has the right to benefit financially from his or her work. he or she has the right to determine who may adapt the work and to ensure that the person who adapts the work upholds his or her moral rights under the copyright.
+
+in its initial stages, copyright was misconstrued as a way of government limiting people from copying without permission. upon creation of a copyright, the holder gets automatic protection and there is no need for registering the copyright like patents or other forms of intellectual property.
+
+on the other hand, both published and unpublished works fall under the scope of copyright protection (torremans, 2007).
+
+history of copyright
+
+the history of copyright is traceable to the 14 th century. it should be understood that the law got into america through england by the virtue of america being a former colony of england. america made its own laws to protect copyright after the revolutionary war.
+
+the american constitution empowered the congress to make laws for the protection of science and arts. the protection accorded by the constitution has helped in founding the other acts. authors and investors were given exclusive rights.
+
+with time the rights were intensified to include the protection of writings and discoveries. federal laws were designed to have a patent clause. the early statutes did not have a conclusive protection, but any protection given was provided for in bills. the protection of a copyright took 14 years that were subject to renewal.
+
+the procedure was distinct since one copy had to be left in the custody of the secretary for state. by 1790, unpublished manuscripts were further protected. this unprecedented growth and the following economic opportunities were fundamental in necessitating protection of copyright rights.
+
+it was only the author and the publisher who were protected during this time. in america, the congress passed an act that was similar to the anne statute. the campaign to offer protection to authors and publishers in europe and north america intensified, thus calling for uniformity in protection of copyright rights.
+
+the copyright laws were continuously revised with major amendments being introduced in 1831 and 1870 onwards (dav
+2024-10-03 14:02:37,783 - Text: Copyright Law in UAE Research Paper
+
+What is Copyright?
+
+Copyright is a legal term under many intell... | True Label: real | Model Decision: None
+2024-10-03 14:02:37,886 - Text: MADISON, Wis. (AP) — A federal judge on Thursday ruled that Wisconsin has to recognize a Wisconsin g... | True Label: fake | Model Decision: real
+2024-10-03 14:02:38,056 - Text: I've woken up again tonight. It's been three months since I found out that my vision loss is due to.... | True Label: real | Model Decision: real
+2024-10-03 14:02:38,219 - Text: phenomenal time. So we weren't really going to complain. 
+ 
+ All ten of us were taken to Moscow. Rus... | True Label: real | Model Decision: real
+2024-10-03 14:02:38,383 - Text: **Sorry this is late, here is my take ( split into 2 comments) : ** 
+ 
+ 
+ ``Can you remember a time ... | True Label: real | Model Decision: real
+2024-10-03 14:02:38,482 - Text: pendence. 
+ 
+ However, it wasn't long before he noticed that his water supply was leaking steadily, ... | True Label: real | Model Decision: real
+2024-10-03 14:02:38,647 - Text: 
+
+
+ How long have you held an American citizenship?... | True Label: fake | Model Decision: real
+2024-10-03 14:02:38,811 - Text: in the facility. I could build customised illnesses from these tiny building blocks, giving an almos... | True Label: real | Model Decision: real
+2024-10-03 14:02:38,987 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'as much as they would like to think of themselves as above these matters, we are bound to recognize the importance of this, for we have the task of building the future. and the next, post may help us to see the future better. we will examine the impact of the recent changes to the "one drop rule", which was passed in 2004.
+
+
+according to wikipedia's article on the one drop rule, the one drop principle applies to any substance used for mixing, including blood, urine, saliva, feces, and semen. however, when it comes to alcohol, the term "one drop rule" has come to denote a "one shot rule", which is a stricter policy compared to the one drop rule. the one shot rule is based on only one drink per day, whereas the one drop rule requires the user to consume the entire bottle of alcohol in under one single drinking session. this rule makes sense in terms of the way alcohol was first introduced around the 18th century, as it is considered to be a cheap, highly portable, and easy-to-make booze that made for quick drinking. it also allowed the user to easily sneak a shot around his or her party buddies – or to even make a whole bottle and share it with everyone from the very first drink. it was this simplicity that made the one drop rule so successful.
+
+however, it wasn't until the 20th century that america adopted a stricter policy on alcohol consumption. to better conform to the new prohibitionist laws, every ounce of alcohol produced in the us had to contain the following amount of proof (99.9%). this policy resulted in a massive increase in alcohol consumption – by the latter part of the 20th century, americans consumed upwards of 10,000 gallons of alcohol every year – which would have been enough to provide for over four years of full employment. this is why it has come to be that we have alcohol manufacturers who advertise themselves as "one shot rule" or "one drop rule" producers – these producers are claiming to be able to supply your entire home with a single bottle at the most convenient time with a single bottle.
+
+when the one drop rule was introduced, the purpose of it was to prevent alcohol abuse and binge drinking. since the new policy was introduced, however, alcohol manufacturers began to push the boundaries on this principle, claiming that they could still provide the user with the maximum amount of one single drink per day – but by consuming the liquid throughout the entire day
+2024-10-03 14:02:38,987 - Text: As much as they would like to think of themselves as above these matters, we are bound to recognize ... | True Label: fake | Model Decision: None
+2024-10-03 14:02:39,158 - Text: (written from a Production point of view Real World article
+
+Captain Picard and Data examine a subsp... | True Label: fake | Model Decision: real
+2024-10-03 14:02:39,329 - Text: I think the best way to describe my view of the new "Masters" series is that the most important feat... | True Label: fake | Model Decision: real
+2024-10-03 14:02:39,433 - Text: The World Cup is getting closer with four days to go until the kick-off of the competition in a matc... | True Label: fake | Model Decision: real
+2024-10-03 14:02:39,602 - Text: 
+[My] [interview] [job] [prep] [for] [[1] [2] [3] [4] [5] [6] [7] [8] [9] [10] [11] [12] [13] [14] [... | True Label: fake | Model Decision: real
+2024-10-03 14:02:39,774 - Text: not only socially outcaste, they were bully hard and suffered being treated less favourably by teach... | True Label: real | Model Decision: real
+2024-10-03 14:02:39,952 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'dead sea scrolls collection review essay
+
+dead sea scrolls is one of the most important collections of jewish texts from the centuries before the rise of christianity. the dead sea scrolls were not discovered all at once in 1947. in modern times, the earliest scroll materials to be discovered were two partial medieval manuscripts of the zadokite fragments, also called the damascus document by many scholars. these manuscripts came to the attention of solomon schechter in 1896, when he retrieved them from the cairo genizah, a storehouse for old books and documents in the ben ezra synagogue in fustat, old cairo.
+
+manuscripts of the very same text were later found in the qumran collection. it is now clear that this document was a central sectarian text. there is a point of view that scrolls were gathered in qumran by a sect whose members left jerusalem in the aftermath of the maccabean revolt. thesis historical documents and archeological discoveries allow to say that dead sea scrolls were written and collected by the sect of essenes leaving near khirbet qumran (the qumran-sectarian theory).
+
+when the hasmonaean rulers adopted the rulings of the pharisees regarding the conduct of the temple in about 152 b.c.e., the loyal opposition, a band of pious sadducees -retreated to the desert, taking up residence at qumran. soon after the qumran scrolls were unearthed, it became the prevailing view that the sect described in the scrolls was none other than the elusive sectarian group termed the essenes, a theory previously championed based on evidence from the genizah manuscripts of the zadokite fragments (baigent 166).
+
+first suggested by sukenik, that theory was fully developed in a series of works, the most important of which was that written by cross. the theory took its roots from descriptions of the essenes by the ancient authors philo judaeus, josephus, and pliny the elder. numerous parallels to the dead sea scrolls are cited in their descriptions pointing to this identification. scholars used the material from philo, josephus, and pliny as a means of interpreting the scrolls and vice versa, thus giving rise to a circular process. this material was then used in searching for christian origins that, the theory held, might be found in the library of the essenes (attanasio and daniaelou 14).
+2024-10-03 14:02:39,953 - Text: Dead Sea Scrolls Collection Review Essay
+
+Dead Sea Scrolls is one of the most important collections ... | True Label: real | Model Decision: None
+2024-10-03 14:02:40,111 - Text: Have you tried a walking or biking exercise routine?  They're great ways to get in shape!... | True Label: fake | Model Decision: real
+2024-10-03 14:02:40,274 - Text: The period of his ministry in Germany is given by Jordan, Anal.
+
+In this case the Anal Area of one T... | True Label: real | Model Decision: real
+2024-10-03 14:02:40,367 - Text:  The national bird of India is the Peacock.... | True Label: fake | Model Decision: real
+2024-10-03 14:02:40,533 - Text: esuming his stoic silence. 
+ 
+ ``If I may be so bold,'' I began, ``Perhaps a decision made in a hast... | True Label: real | Model Decision: real
+2024-10-03 14:02:40,698 - Text: throat. He choked. His hands impulsively held his throat like it try to straighten his air pipe. The... | True Label: real | Model Decision: real
+2024-10-03 14:02:40,798 - Text: Glimmer + glow with a radiant complexion with this stunning highlighter kit by Anastasia Beverly Hil... | True Label: real | Model Decision: real
+2024-10-03 14:02:40,901 - Text: The use of 60 as a base for measuring time can be traced back to ancient civilizations. The Babyloni... | True Label: fake | Model Decision: real
+2024-10-03 14:02:41,069 - Text: This is a list of all of my previous video game reviews. These reviews are written from a perspectiv... | True Label: fake | Model Decision: real
+2024-10-03 14:02:41,235 - Text: Well, my siblings may tell you otherwise, but I still have a pretty interesting time. I've got a kid... | True Label: real | Model Decision: real
+2024-10-03 14:02:41,404 - Text: comfortable immediately as he towered over me, his eyes burning holes into me and his smile as mocki... | True Label: real | Model Decision: real
+2024-10-03 14:02:41,569 - Text: ymore. The whole world is waking up outside, I hate when you here the sounds of the birds singing, I... | True Label: real | Model Decision: real
+2024-10-03 14:02:41,735 - Text: ``Can anyone tell me what brought about the end of Borag the Terrible's thousand year reign?'' asked... | True Label: real | Model Decision: real
+2024-10-03 14:02:41,832 - Text: 
+
+The rules of chess are fairly simple. Each player has 16 pieces: a king, a queen, two rooks, two k... | True Label: fake | Model Decision: real
+2024-10-03 14:02:41,997 - Text: I lost everything that day, my life, my love, my home, my money. I was now a bum on the street, begg... | True Label: real | Model Decision: real
+2024-10-03 14:02:42,171 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'crime policy and practices: trying juveniles as adults term paper
+
+introduction
+
+the president and congress, through the juvenile justice and delinquency prevention (jjdp), has established and amended the office of juvenile justice and delinquency prevention (ojjdp), or the act that addresses the issues of juvenile delinquency and juvenile justice. to be able to address the said issues more specifically, ojjdp was further divided into seven (7) components, which are the research and program development division, training and technical assistance division, special emphasis division, state relations and assistance division, information dissemination unit, concentration of federal efforts program and missing exploited children’s program (griffin et al., 1998).
+
+according to the amended act, there are some instances when a juvenile is sent for adult criminal prosecution. their cases are transferred from juvenile courts to adult courts through different state transfer mechanisms, which are the waiver, direct file and statutory exclusion. waiver provisions allow the decision to transfer the juvenile case to be made by the state’s juvenile courts. there are three (3) types of waivers. the discretionary waiver, which depends upon the juvenile court judge’s discretion of waiving the juvenile case (standards for this waiver are for the best interests of the child and the public), the mandatory waiver, which provides certain age, offence, or other criteria to be met by the case, and the presumptive waiver, which designates certain groups of cases that makes them rebuttably presumed as appropriate. another transfer mechanism, the direct file, allow the decision to transfer the juvenile case to be made by the prosecutor. last but not least, the statutory exclusion allows the decision to transfer the juvenile case to be set forth by the state’s jurisdictions (griffin et al., 1998).
+
+juveniles (people below 17 years old) being tried as an adult is a long debate that would touch the issues of child care, the values and morals of treating a child who has done a wrongful act, and all the ethics related to it. when we say “to try a juvenile like an adult”, we mean having them be put on trial like an ordinary adult would be, with the possibilities of facing the same sentences, fines and other sanctions an ordinary adult being tried would have (thompson, 2006). the nature of ojjdp, when it is seen
+2024-10-03 14:02:42,171 - Text: Crime Policy and Practices: Trying Juveniles as Adults Term Paper
+
+Introduction
+
+The President and C... | True Label: real | Model Decision: None
+2024-10-03 14:02:42,277 - Text: John was a master of regret. His mantra was ``if I had only knew then what I know now...''. One part... | True Label: real | Model Decision: real
+2024-10-03 14:02:42,447 - Text: T*here is no concrete evidence that proves how the Awakening first occurred. * 
+ 
+ *Nothing about it... | True Label: real | Model Decision: real
+2024-10-03 14:02:42,610 - Text: o... one... 
+ 
+ I stood up abruptly, taking my wooden chair with me to use as a shield. Behind me, I... | True Label: real | Model Decision: real
+2024-10-03 14:02:42,773 - Text: again as if waiting for more. 
+ 
+ Johnny stood, panting, and shocked. All that training, and for wha... | True Label: real | Model Decision: real
+2024-10-03 14:02:42,937 - Text: sees a half smile form on her lips. He feels her eyes on him, and although he is terrified he forces... | True Label: real | Model Decision: real
+2024-10-03 14:02:43,106 - Text:  that we can help each other. If in agreement, please sign below on the line. ” The letter was signe... | True Label: real | Model Decision: real
+2024-10-03 14:02:43,273 - Text: ``Name your desire mortal scum, waking me up at such hours, this is my daily happy place time'' 
+ 
+ ... | True Label: real | Model Decision: real
+2024-10-03 14:02:43,438 - Text: When you're in a new city, alone and young and afraid, you may wonder about how you could potentiall... | True Label: real | Model Decision: real
+2024-10-03 14:02:43,602 - Text: Brent Musburger is a broadcaster with the most appearances of any broadcaster on any ESPN program. I... | True Label: fake | Model Decision: real
+2024-10-03 14:02:43,774 - Text: Git and Github's new collaboration is not new. While there have been other cross-project collaborati... | True Label: fake | Model Decision: real
+2024-10-03 14:02:43,872 - Text: d I held hands and lead the gang to our entry point. 
+ 
+ If only I knew what was going to happen. 
+ ... | True Label: real | Model Decision: real
+2024-10-03 14:02:44,036 - Text: 
+The best way to quit smoking cigarettes is to develop a personalized quitting plan that is tailored... | True Label: fake | Model Decision: real
+2024-10-03 14:02:44,139 - Text: “ How long has Pete been here, Hank? ” 
+ 
+ “ Dogs! Bill, I don ’ t know. Do I look like the warden? ... | True Label: real | Model Decision: real
+2024-10-03 14:02:44,303 - Text:  all. 
+ 
+ 
+ Everything went still then, the first time for the day. A blur filled my vision, focusin... | True Label: real | Model Decision: real
+2024-10-03 14:02:44,472 - Text: I've never been a fan of the idea of "safe spaces"—whereby one must not ask difficult questions or b... | True Label: fake | Model Decision: real
+2024-10-03 14:02:44,634 - Text:   If you want to spend money while visiting the supermarket, it’s a good idea to think about ways to... | True Label: fake | Model Decision: real
+2024-10-03 14:02:44,804 - Text: ``I can't believe these morons'', Donald Trump exclaims to several staff people anxiously sitting ar... | True Label: real | Model Decision: real
+2024-10-03 14:02:44,967 - Text: 
+Some natural ways to improve your skin include: drinking plenty of water, eating a balanced diet, e... | True Label: fake | Model Decision: real
+2024-10-03 14:02:45,072 - Text: Add Giants starter Madison Bumgarner to the list of players entering the 2018 season in the best sha... | True Label: real | Model Decision: real
+2024-10-03 14:02:45,175 - Text: Charles came out from the back when he heard the bell on the counter. A plain, middle-aged man was a... | True Label: real | Model Decision: real
+2024-10-03 14:02:45,339 - Text: He licked his lips and stood back to admire his handiwork. 
+ The cube sat neatly on top of a pile of... | True Label: real | Model Decision: real
+2024-10-03 14:02:45,504 - Text:  I've always been the quick witted guy. I continued with my previous thought, *'' i'm almost PAWSITI... | True Label: real | Model Decision: real
+2024-10-03 14:02:45,668 - Text: 
+ I was finishing up my studies for international business when I turned 21. I was at a party in my ... | True Label: real | Model Decision: real
+2024-10-03 14:02:45,839 - Text: There was only darkness, and memories. I had a dream. I was in the gym, but I was outside my body, s... | True Label: real | Model Decision: real
+2024-10-03 14:02:46,006 - Text:  please --'' 
+ 
+ 
+ This time, I was the one who was interrupted. ``You know these people. Yes?'' 
+ 
+... | True Label: real | Model Decision: real
+2024-10-03 14:02:46,102 - Text: Kermes is a genus of flowering plant in the family Lamiaceae. There are approximately 20 genera and ... | True Label: fake | Model Decision: real
+2024-10-03 14:02:46,200 - Text: 
+The different types of careers available in computer science include software engineering, systems ... | True Label: fake | Model Decision: real
+2024-10-03 14:02:46,301 - Text:  trying to find the one to make my mark disappear. I am a factory line worker in a car factory. My j... | True Label: real | Model Decision: real
+2024-10-03 14:02:46,470 - Text: There are many factors that can contribute to differences in taste in music, and it's not just about... | True Label: fake | Model Decision: real
+2024-10-03 14:02:46,640 - Text: The man had walked past her house every morning, his droopy labrador plodding by his side. Haile had... | True Label: real | Model Decision: real
+2024-10-03 14:02:46,736 - Text: "There is no truth or truth to the story we are hearing from certain media organizations and others.... | True Label: fake | Model Decision: real
+2024-10-03 14:02:46,906 - Text: The Abrahamic God laughed heartily to the multitude of Pantheons before him. ``BETWEEN THE MUSLIMS, ... | True Label: real | Model Decision: real
+2024-10-03 14:02:47,010 - Text: A couple who were caught trying to smuggle drugs into Mexico have appeared in court to face possible... | True Label: fake | Model Decision: real
+2024-10-03 14:02:47,175 - Text: A rock. A goddamned piece of shit is what they were calling God. That didn't stop everyone from taki... | True Label: real | Model Decision: real
+2024-10-03 14:02:47,343 - Text: We are attempting to give it to you... does it not please you? ” 
+ 
+ The Gods turned to examine the ... | True Label: real | Model Decision: real
+2024-10-03 14:02:47,514 - Text: ITH INANIMATE OBJECTS, PRESS *TWO*'' 
+ 
+ Jim started, ``Wait, maybe it's considered an ``inanimate r... | True Label: real | Model Decision: real
+2024-10-03 14:02:47,679 - Text:  
+ I know what you're thinking. ``You're an idiot. People are *vanishing* doing exactly what you wer... | True Label: real | Model Decision: real
+2024-10-03 14:02:47,782 - Text: e. We quickly became the best of friends, and our friendship lasted for years. We went through good ... | True Label: real | Model Decision: real
+2024-10-03 14:02:47,886 - Text: A woman who was shot and killed by a Houston police officer earlier this month was allegedly "wantin... | True Label: fake | Model Decision: real
+2024-10-03 14:02:47,991 - Text: HTC is the latest member of Motorola's Droid family to release new Moto G smartphones, and they will... | True Label: fake | Model Decision: real
+2024-10-03 14:02:48,157 - Text: n “ Yeah, I mean, it might be dangerous. We should be careful, ” Mickey rubbed his shoulder as he lo... | True Label: real | Model Decision: real
+2024-10-03 14:02:48,325 - Text: is soulmate just five days after turning 18 my mom started to worry. 
+ 
+ You are getting on in your ... | True Label: real | Model Decision: real
+2024-10-03 14:02:48,487 - Text: Oh, this is a fun SatChat ; I love reading all the ideas! 
+ 
+ There are approximately a billion stor... | True Label: real | Model Decision: real
+2024-10-03 14:02:48,583 - Text: If you are n't at risking of starving to death , getting killed in a war , or dying from simple inju... | True Label: real | Model Decision: real
+2024-10-03 14:02:48,755 - Text: American Military University: The Ultimate Advantage Is an Educated Mind Presentation
+
+Accredetation... | True Label: real | Model Decision: real
+2024-10-03 14:02:48,860 - Text: SpaceX may have canceled its mission to Mars with a Red Dragon capsule that was set for 2020.
+
+Compa... | True Label: real | Model Decision: real
+2024-10-03 14:02:49,023 - Text: The New York trading floor fell into a stunned silence. I stared at the scrolling information like a... | True Label: real | Model Decision: real
+2024-10-03 14:02:49,121 - Text: Pamela Geller is the President of the American Freedom Defense Initiative (AFDI), publisher of Pamel... | True Label: fake | Model Decision: real
+2024-10-03 14:02:49,288 - Text: , we only need to run a few more trials before we see FDA approval. This could change his life, and ... | True Label: real | Model Decision: real
+2024-10-03 14:02:49,465 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'the impacts of the bureaucracy in “catch-22 explained” essay
+
+introduction
+
+the video clip “catch-22 explained” narrates the story of a world war ii bombardier who is already fed up with the insanity of the upheaval. he is trying to escape this kind of madness by using every strategy to leave the army. however, catch 22 clause reveals that a soldier’s concern for his own safety during the war exhibited the rationality of his mind (ghenghy, 2012). the clause, therefore, depicts the nature of a mentality that is developed by individuals in bureaucratic environments. the video shows that insanity is the only viable way of dealing with every crazy situation. this discussion gives a detailed analysis of the impacts of the bureaucracy depicted in the video.
+
+analyzing the issues emerging from bureaucracy
+
+description of rules and policies
+
+catch-22 is a term used to illustrate the nature of command in many military systems. the video indicates that rules have to be followed by every person within the hierarchical structure. those at the lowest levels are usually on the receiving end (ghenghy, 2012). catch-22 is a clause that compels soldiers to obey or follow orders from their respective commanding officers. this means that a given order contradicting another one given by a superior should be disregarded immediately.
+
+the video demonstrates how topmost commanders present instructions and policies that must be followed instantly. these policies are embedded without considering their implications on the followers. this is a clear representation of bureau pathology. the excessive bureaucracy is usually characterized by means-ends inversion whereby every duty becomes a critical goal that must be pursued. the soldier portrayed in the video is forced to change his mind if he is to survive the conditions associated with the ongoing war (ghenghy, 2012).
+
+hierarchical decision-making: means-end inversion
+
+hierarchical decision-making is a practice that has gained the attention of many scholars and organizational theorists. the process is applied by specific leaders to dictate the behaviors and actions embraced by those in lower levels of the hierarchical structure. some decisions are made without considering their implications or impacts on different followers (ghenghy, 2012). the presented video clip shows how such decision-making processes can result in disastrous outcomes.
+
+it is agreeable that hierarchical decision-making processes can result in means-end inversion. this is a scheme whereby the method was undertaken to complete a specific duty. however
+2024-10-03 14:02:49,465 - Text: The Impacts of the Bureaucracy in “Catch-22 Explained” Essay
+
+Introduction
+
+The video clip “Catch-22... | True Label: real | Model Decision: None
+2024-10-03 14:02:49,639 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'how do you explain an otherwise ordinary, normal guy, who would be considered a complete psychopath if he walked away from his job, a normal, normal guy who is obsessed with death, or a normal, normal guy who can't hold anything steady with two hands?
+
+there is the possibility he is crazy or mentally ill. a doctor or other mental health professional might also believe that he has an illness. he has a history of depression. he's possibly experiencing suicidal thoughts. he might be a danger to himself if he goes to his therapist and talks about how much he hates his job.
+
+but even if that's the case, there are a lot of reasons why this man, who has not displayed any suicidal tendencies, should not be given lethal injection.
+
+in the case of the alleged oklahoma city bomber, it's just plain crazy that in 2014, he went from talking about leaving his job to planning the oklahoma city bombing. the only explanation available to explain why he got to where he is in 2014, is he suffers from a mental illness. yet oklahoma city bomber timothy mcveigh wasn't put to death.
+
+in 2012, an oregon jury acquitted a man of the 2010 murders of his former girlfriend and her husband. the man was found guilty of negligent homicide, but not murder. he's currently on florida's death row. in 2010, he got a bad reaction to painkillers, that made him depressed and suicidal. that depression continued for six years.
+
+yet despite the evidence for mental illness, and a history of suicide attempts and self-harm from several different sources, the oregon jury cleared him of murder and manslaughter, and ordered five years of probation for his crime.
+
+in california, the same jury acquitted a man in 2011 when he shot a police officer in the head. he shot his partner after the officer threatened to arrest him for selling marijuana. but the jury found him not guilty of murder in the officer's death. he then murdered himself during his own police interrogation, in which he talked about his mental illness.
+
+the oregon court of appeal found the judge in this case abused his discretion when the jury sent mcveigh to death row. they ruled that the judge could have imposed more lenient sentences had he been able to consider the mental illness of mcveigh.
+
+yet, california hasn't followed oregon by executing such a dangerous killer as mcveigh. in 2003, california authorities sentenced a man with a history
+2024-10-03 14:02:49,639 - Text: How do you explain an otherwise ordinary, normal guy, who would be considered a complete psychopath ... | True Label: fake | Model Decision: None
+2024-10-03 14:02:49,814 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'translations based on galatians essay (critical writing)
+
+table of contents
+ 1. introduction
+ 2. exegetical sized table
+ 3. key word study
+ 4. outline for galatians (3:23-29)
+ 5. conclusion
+ 6. references
+
+introduction
+
+in the course of time, the english language changes, and the scholars try to accommodate the bible to assist the believers in understanding it. therefore, there are various bible translation versions that were performed at different periods of history. this paper will target four main translations based on galatians (3:23-29) to compare their grammatical structures and connotations. in addition, a keyword analysis will be conducted, and an outline of the mentioned excerpt will be created.
+
+exegetical sized table
+
+                king james version (kjv)                                                                                                              new american standard bible (nasb)                                                                                                           new revised standard version (nrsv)                                                                                                             new international version (niv)                                                                                                      
+galatians 3:23  but before faith came, we were kept under the law, shut up unto the faith which should afterward be revealed.                         but before faith came, we were kept in custody under the law, being shut up to the faith, which was later to be revealed.                    now before faith came, we were imprisoned and guarded under the law until faith would be revealed.                                              before the coming of this faith, we were held in custody under the law, locked up until the faith that was to come would be revealed.
+galatians 3:24  wherefore the law was our schoolmaster to bring us unto christ, that we might be justified by faith.                                  therefore the law has become our tutor to lead us to christ so that we may be justified by faith.                                            therefore the law was our disciplinarian until christ came so that we might be justified by faith.                                              so the law was our guardian until christ came that we might be justified by faith.                                                   
+galatians 3:25  but after that, faith comes, we are no longer under a schoolmaster.                                                                   but now that faith has come, we are no longer under a tutor                                                                                  but now that faith has come, we are no longer subject to a disciplinarian,                                                                      now that this faith has come, we are no longer under a guardian.                                                                     
+galatians 3:26  for ye are all the children of
+2024-10-03 14:02:49,814 - Text: Translations Based on Galatians Essay (Critical Writing)
+
+Table of Contents
+ 1. Introduction
+ 2. Exe... | True Label: real | Model Decision: None
+2024-10-03 14:02:49,982 - Text: In an exclusive interview with The Nation, a former senior administration official said that the Sta... | True Label: fake | Model Decision: real
+2024-10-03 14:02:50,087 - Text: TRENTON, N.J. (CBSNewYork/AP) — The Port Authority of New York and New Jersey continues to take an a... | True Label: real | Model Decision: real
+2024-10-03 14:02:50,265 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'ja'far bin muhammad reported on the authority of his father "we entered upon jabir bin 'abd allaah. when we reached him, he asked about the people (who had come to visit him). when my turn came i said "i am muhammad bin ali bin hussain. he patted my head with his hand and undid my upper then lower buttons. he then placed his hand between my nipples and in those days i was a young boy." he then said "welcome to you my nephew, ask what you like. i questioned him he was blind. the time of prayer came and he stood wrapped in a mantle. whenever he placed it on his shoulders its ends fell due to its shortness. he led us in prayer while his mantle was placed on a rack by his side. i said "tell me about the hajj of the apostle of allaah(ﷺ)."he signed with his hand and folded his fingers indicating nine. he then said apostle of allaah(ﷺ) remained nine years (at madeenah ) during which he did not perform hajj, then made a public announcement in the tenth year to the effect that the apostle of allaah(ﷺ) was about to (go to) perform hajj. a large number of people came to madeenah everyone desiring to follow him and act like him. the apostle of allaah(ﷺ) went out and we too went out with him till we reached dhu al hulaifah. asma' daughter of 'umais gave birth to muhammad bin abi bakr. she sent message to apostle of allaah(ﷺ) asking him what should i do?he replied "take a bath, bandage your private parts with a cloth and put on ihram." the apostle of allaah(ﷺ) then prayed (in the masjid) and mounted al qaswa' and his she camel stood erect with him on its back. jabir said "i saw (a large number of) people on mounts and on foot in front of him and a similar number on his right side and a similar number on his left side and a similar number behind him. the apostle of allaah(ﷺ) was among us, the qur'an was being revealed to him and he knew its interpretation. whatever he did, we did it. the apostle of allaah(ﷺ) then returned to
+2024-10-03 14:02:50,265 - Text: Ja'far bin Muhammad reported on the authority of his father "We entered upon Jabir bin 'Abd Allaah. ... | True Label: real | Model Decision: None
+2024-10-03 14:02:50,444 - Generated text did not contain a valid 'real' or 'fake' classification: is the following text human-written or ai-generated? text: 'the custom woody company management essay
+
+this paper outlines various aspects required for the effective implementation of engineering and construction projects by examining the approach used by the custom woody company. this is a family business found by ron carpenter in 1954. initially, ron carpenter learned carpentry under apprenticeship. ron carpenter then used his entrepreneurial skills to establish the custom woody company.
+
+the company started by producing cabinet furniture. nowadays, the company imports hardwood and utilizes the local indigenous softwood as raw materials. currently, the family running the business has a formidable workforce. owing to an increase in demand, ron carpenter has decided to move to subcontract work, which involves supplying and installing countertops, and other necessary cabinets required for new commercial construction.
+
+most construction and engineering companies often survive on contracts and subcontracts (adams, 1995). in subcontracts, a general or main contractor hires subcontractor, who performs specific tasks as a part of the overall projects (adams, 1995). the subcontractor is then paid by the main contractor for the services rendered. there are a number of advantages and disadvantages when both subcontracts and main contracts are considered.
+
+main contractors generate a higher income as compared to subcontractors because the construction tender is fully awarded to them by the client (conrow, 2003). the main contractor controls the whole projects. winning a tender for the production of big products requires a massive investment. on the other hand, subcontractors venture into subcontracts due to the lack of capital and workforce required to complete the project at hand. as a result, they offer their services on contracts. this is advantageous because subcontractors provide specific tasks within a specific period.
+
+by examining the case of the custom wood company, a number of lessons can be learned. ron carpenter decided to move into subcontract work owing to an increase in the demand for cabinet furniture. looking at the company’s reputation, it would have been better if ron had prioritized winning tenders as the main contractor.
+
+this would enable his company to generate more income. in this case, the company should aim at acquiring major construction projects and hire subcontractors to offer other services. in this case, the custom wood company will produce the required furniture, while the subcontractor works on the other aspects of the project. this will give the custom wood company a higher bargaining power because it will be in charge of the overall management of the project.
+
+looking at the woody 2000 project, a number of issues concerning communication and the management of projects
+2024-10-03 14:02:50,444 - Text: The Custom Woody Company Management Essay
+
+This paper outlines various aspects required for the effe... | True Label: real | Model Decision: None
+2024-10-03 14:02:50,615 - Text: Bright light stabs at me as my conscious mind regains control. There's a stabbing pain behind my eye... | True Label: real | Model Decision: real
+2024-10-03 14:02:50,786 - Text: “ I ’ d like to start by saying that I don ’ t do this kind of thing very often, if I can avoid it. ... | True Label: real | Model Decision: real
+2024-10-03 14:02:50,787 - Processed 100 samples
+2024-10-03 14:02:50,787 - Accuracy: 0.6000
+2024-10-03 14:02:50,787 - Final Accuracy: 0.6000
