@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
 
 import yaml
+from datasets import Dataset
 
+from src.arguments.dataset_args import DatasetArgs
 from src.arguments.env_args import EnvArgs
 from src.arguments.model_args import ModelArgs
 
@@ -17,11 +19,15 @@ class ConfigArgs:
 
     args_to_config = {  # specify these keys in the *.yml file
         EnvArgs.CONFIG_KEY: EnvArgs,
-        ModelArgs.CONFIG_KEY: ModelArgs
+        ModelArgs.CONFIG_KEY: ModelArgs,
+        DatasetArgs.CONFIG_KEY: DatasetArgs
     }
 
     def get_model_args(self) -> ModelArgs:
         return self.loaded_configs.setdefault(ModelArgs.CONFIG_KEY, ModelArgs())
+
+    def get_dataset_args(self) -> DatasetArgs:
+        return self.loaded_configs.setdefault(DatasetArgs.CONFIG_KEY, DatasetArgs())
 
     def get_env_args(self) -> EnvArgs:
         return self.loaded_configs.setdefault(EnvArgs.CONFIG_KEY, EnvArgs())
