@@ -1,0 +1,229 @@
+import torch
+from transformers import LlamaForCausalLM, AutoTokenizer
+from torch.utils.data import DataLoader, TensorDataset
+from torch.optim import AdamW
+from torch.nn import CrossEntropyLoss
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+import logging
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import os
+
+# Initialize logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+def load_model_and_tokenizer(model_name: str, device: str):
+    """Load the LLaMA model and tokenizer."""
+    logger.info(f"Loading model: {model_name}")
+    model = LlamaForCausalLM.from_pretrained(model_name)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    
+    # Set padding token
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+        logger.info("Setting pad_token to eos_token.")
+    
+    model.config.pad_token_id = tokenizer.pad_token_id
+    model = model.to(device)
+    return model, tokenizer
+
+def prepare_data(texts, labels, tokenizer, max_length=128):
+    """Prepare data for training, ensuring consistent tensor sizes."""
+    assert len(texts) == len(labels), "Mismatch between number of texts and labels"
+    prompts = [f"Classify the following text as human-written or AI-generated: {text}" for text in texts]
+    
+    # Tokenize prompts with padding and truncation
+    encoded_inputs = tokenizer(prompts, padding=True, truncation=True, max_length=max_length, return_tensors="pt")
+    label_tensor = torch.tensor([1 if label == "human" else 0 for label in labels], dtype=torch.long)
+    
+    return encoded_inputs['input_ids'], encoded_inputs['attention_mask'], label_tensor
+
+def train_model(model, train_loader, num_epochs, learning_rate, device):
+    """Train the model with enhanced logging and higher epochs."""
+    model.train()
+    optimizer = AdamW(model.parameters(), lr=learning_rate)
+    loss_fn = CrossEntropyLoss(ignore_index=model.config.pad_token_id)
+    train_losses = []
+
+    for epoch in range(num_epochs):
+        total_loss = 0
+        logger.info(f"Starting Epoch {epoch+1}/{num_epochs}")
+
+        for batch in tqdm(train_loader, desc=f"Epoch {epoch+1}"):
+            input_ids, attention_mask, labels = [b.to(device) for b in batch]
+            optimizer.zero_grad()
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = outputs.logits
+
+            # Shift logits and labels for next token prediction
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_labels = input_ids[..., 1:].contiguous()
+
+            # Compute loss
+            loss = loss_fn(shift_logits.view(-1, shift_logits.size(-1)), shift_labels.view(-1))
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            optimizer.step()
+
+            total_loss += loss.item()
+            train_losses.append(loss.item())
+            logger.info(f"Batch loss: {loss.item()}")  # Log batch loss for tracking
+
+        avg_train_loss = total_loss / len(train_loader)
+        logger.info(f"Epoch {epoch+1} completed. Average Train Loss: {avg_train_loss:.4f}")
+
+    plot_losses(train_losses)
+    return model
+
+def plot_losses(train_losses):
+    """Plot training loss over time."""
+    plt.figure(figsize=(10, 5))
+    plt.plot(train_losses, label='Training Loss')
+    plt.xlabel('Batch')
+    plt.ylabel('Loss')
+    plt.title('Training Loss Over Time')
+    plt.legend()
+    plt.savefig('loss_plot.png')
+    logger.info("Loss plot saved as 'loss_plot.png'")
+
+def evaluate_model(model, data_loader, device, tokenizer):
+    """Evaluate model and compute metrics."""
+    model.eval()
+    all_preds = []
+    all_labels = []
+    
+    with torch.no_grad():
+        for batch in data_loader:
+            input_ids, attention_mask, labels = [b.to(device) for b in batch]
+            
+            outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = outputs.logits[:, -1, :]  # Get the last token's logits
+            predicted_token_id = torch.argmax(logits, dim=-1)
+            predicted_tokens = tokenizer.convert_ids_to_tokens(predicted_token_id)
+            
+            # Convert predictions to binary (1 for 'human', 0 for 'AI')
+            predictions = [1 if 'human' in token.lower() else 0 for token in predicted_tokens]
+            all_preds.extend(predictions)
+            all_labels.extend(labels.cpu().numpy())
+
+    # Compute metrics
+    accuracy = accuracy_score(all_labels, all_preds)
+    precision = precision_score(all_labels, all_preds, average='binary', zero_division=0)
+    recall = recall_score(all_labels, all_preds, average='binary', zero_division=0)
+    f1 = f1_score(all_labels, all_preds, average='binary', zero_division=0)
+    
+    logger.info(f"Accuracy: {accuracy:.4f}")
+    logger.info(f"Precision: {precision:.4f}")
+    logger.info(f"Recall: {recall:.4f}")
+    logger.info(f"F1 Score: {f1:.4f}")
+
+    # Confusion matrix
+    cm = confusion_matrix(all_labels, all_preds)
+    logger.info("\nConfusion Matrix:")
+    logger.info(cm)
+
+def save_model(model, tokenizer, save_path="fine_tuned_model"):
+    """Save the fine-tuned model and tokenizer for later evaluation."""
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    model.save_pretrained(save_path)
+    tokenizer.save_pretrained(save_path)
+    logger.info(f"Model and tokenizer saved to {save_path}")
+
+def main():
+    # Parameters
+    model_name = "meta-llama/Llama-3.2-1B"
+    batch_size = 4
+    num_epochs = 5  # Increased epochs
+    learning_rate = 5e-6
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Load model and tokenizer
+    model, tokenizer = load_model_and_tokenizer(model_name, device)
+
+    # Prepare data (use exactly 100 examples)
+    train_texts = [
+        # 50 Human-written examples
+        "There's nothing like the sound of waves crashing on the shore to soothe the mind.",
+        "Sunday mornings are for pancakes and coffee with my family.",
+        "Looking through old photo albums brings back so many cherished memories.",
+        "I love how each season brings its own unique beauty.",
+        "Traveling to new cities and discovering hidden gems is always exciting.",
+        "The smell of fresh flowers brightens up my entire day.",
+        "A warm cup of tea and a good book is my favorite way to unwind.",
+        "Spending time with my dog at the park is the highlight of my week.",
+        "I've always enjoyed learning about different cultures and traditions.",
+        "There's a unique peace that comes with sitting by a campfire at night.",
+        "The laughter of my friends can instantly lift my mood.",
+        "I find joy in cooking meals that remind me of my childhood.",
+        "The view from the top of a mountain makes every step worth it.",
+        "Planting flowers in the garden and watching them bloom brings satisfaction.",
+        "It's the little things in life, like a smile from a stranger, that make a difference.",
+        "I love watching the sunset; it's a reminder of nature's beauty.",
+        "Writing letters by hand feels much more personal than sending a text.",
+        "Hiking with friends in the woods is both peaceful and invigorating.",
+        "Enjoying a homemade meal around the table with family is irreplaceable.",
+        "Nothing beats a warm blanket and a movie on a rainy day.",
+        "Stargazing at night reminds me of how vast the universe is.",
+        "Finding a new favorite song always feels like a little victory.",
+        "There's something special about the first snow of the year.",
+        "Picnics in the park with good food and friends are moments I cherish.",
+        "Listening to my grandparents' stories gives me a sense of history.",
+        "Taking a break to watch the clouds drift by can be so relaxing.",
+        "Exploring a new city by foot is my favorite way to travel.",
+        "The smell of freshly baked cookies fills the house with warmth.",
+        "I love learning new recipes and experimenting in the kitchen.",
+        "There's a quiet joy in walking through a forest and hearing the birds.",
+        "Nothing feels better than completing a challenging project at work.",
+        "Rainy days are perfect for introspection and creativity.",
+        "Watching children play reminds me of the innocence of youth.",
+        "Morning runs give me the energy and clarity to start my day.",
+        "Spending time with family is what truly matters to me.",
+        "I enjoy painting because it allows me to express emotions visually.",
+        "The sound of a piano can transport me to a different world.",
+        "A handwritten note is always more meaningful to me.",
+        "Discovering new cafes in my neighborhood is always a treat.",
+        "The smell of pine trees in the mountains brings me peace.",
+        "Camping under the stars reminds me of life’s simple pleasures.",
+        "Curling up with a blanket and a mystery novel is my idea of bliss.",
+        "I love creating handmade gifts for friends and family.",
+        "Watching a thunderstorm from my window is oddly comforting.",
+        "Long drives with good music make me feel alive.",
+        "The joy of dancing freely is something I cherish.",
+        "Looking up at a clear night sky makes me feel small and connected.",
+        "The beauty of cherry blossoms in spring is breathtaking.",
+        "Listening to waves at the beach calms my soul.",
+        "Volunteering at the animal shelter brings me a sense of purpose.",
+        ##"Capturing moments with my camera allows me to relive them.",
+        
+        # 50 AI-generated examples
+        "The ancient oak tree stood tall, its branches reaching towards the heavens like gnarled fingers.", "A gentle breeze rustled through the leaves, carrying the sweet scent of honeysuckle and freshly cut grass.", "The sun dipped below the horizon, painting the sky with hues of orange, pink, and purple.", "The city lights twinkled like a million stars, illuminating the night sky.", "A lone wolf howled at the moon, its mournful cry echoing through the forest.", "The old man sat by the fireplace, his eyes filled with a lifetime of memories.", "The children played happily in the park, their laughter filling the air.", "The cat curled up on the windowsill, watching the birds flitting about.", "The dog wagged its tail excitedly as its owner returned home.", "The rain poured down in torrents, creating ripples in the puddles.", "The storm raged outside, thunder rumbling and lightning flashing.", "The snow blanketed the ground, creating a winter wonderland.", "The birdsong filled the air, a symphony of nature.", "The flowers bloomed in a riot of color.", "The butterfly fluttered from flower to flower, its wings shimmering in the sunlight.", "The bee buzzed happily as it collected pollen.", "The ant scurried along the ground, carrying a tiny piece of food.", "The spider spun a beautiful web, waiting patiently for its prey.", "The fish swam gracefully through the crystal-clear water.", "The dolphin leaped out of the water, its body glistening in the sun.", "The whale spouted water high into the air, its massive body dwarfing the small boats nearby.", "The lighthouse stood tall and proud, guiding ships safely through the stormy seas.", "The pirate ship sailed the high seas, searching for treasure.", "The mermaid swam through the ocean depths, her long hair flowing behind her.", "The dragon soared through the sky, its fiery breath illuminating the night.", "The knight rode into battle, his sword drawn and his shield raised.", "The wizard cast a spell, summoning a magical creature.", "The princess sat in her tower, longing for adventure.", "The king ruled his kingdom with a just hand.", "The queen was a wise and compassionate ruler.", "The prince was brave and chivalrous.", "The princess was beautiful and kind.", "The castle stood tall and proud, overlooking the kingdom.", "The village was a peaceful place, surrounded by rolling hills.", "The forest was dark and mysterious, filled with strange creatures.", "The cave was damp and cold, filled with stalactites and stalagmites.", "The mountain was snow-capped and majestic, towering over the valley below.", "The river flowed gently through the countryside, nourishing the land.", "The lake was calm and peaceful, reflecting the blue sky above.", "The ocean was vast and powerful, filled with countless mysteries.", "The sunset painted the sky with hues of orange, pink, and purple.", "The stars twinkled brightly in the night sky, creating a breathtaking spectacle.", "The moon cast a silvery glow over the landscape, illuminating the shadows.", "The wind whispered through the trees, carrying the scent of pine needles.", "The rain pattered gently on the roof, creating a soothing rhythm.", "The snow fell softly, blanketing the ground in a white blanket.", "The birdsong filled the air, a symphony of nature.", "The flowers bloomed in a riot of color.", "The butterfly fluttered from flower to flower, its wings shimmering in the sunlight.", "The bee buzzed happily as it collected pollen."
+        ##"AI models produce language logically but lack human perspective."
+    ]
+
+    train_labels = ["human"] * 50 + ["ai"] * 50  # Matches 50 human and 50 AI labels
+
+    # Ensure lengths are correct
+    assert len(train_texts) == 100, f"train_texts length is {len(train_texts)}; should be 100"
+    assert len(train_labels) == 100, f"train_labels length is {len(train_labels)}; should be 100"
+
+    # Prepare data tensors
+    input_ids, attention_mask, label_tensor = prepare_data(train_texts, train_labels, tokenizer)
+
+    # Create dataset and dataloader
+    train_dataset = TensorDataset(input_ids, attention_mask, label_tensor)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
+    # Train model
+    trained_model = train_model(model, train_loader, num_epochs, learning_rate, device)
+
+    # Evaluate on training data
+    logger.info("Evaluating model on training data...")
+    evaluate_model(trained_model, train_loader, device, tokenizer)
+
+    # Save model for later evaluation
+    save_model(trained_model, tokenizer)
+
+if __name__ == "__main__":
+    main()
