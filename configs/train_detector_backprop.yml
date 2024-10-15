@@ -1,2 +1,7 @@
 dataset_args:
   dataset_name: artem9k/ai-text-detection-pil
+
+
+
+env_args:
+  batch_size: 16

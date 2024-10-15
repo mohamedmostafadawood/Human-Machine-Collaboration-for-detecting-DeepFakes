@@ -4,6 +4,7 @@ from src.arguments.config_args import ConfigArgs
 from src.arguments.dataset_args import DatasetArgs
 from src.arguments.env_args import EnvArgs
 from src.arguments.model_args import ModelArgs
+from src.models.autoregressive_lm import AutoregressiveLM
 from src.models.model_factory import ModelFactory
 
 
@@ -29,11 +30,9 @@ def train_detector_backprop(
         dataset_args = config_args.get_dataset_args()
         env_args = config_args.get_env_args()
 
-    # reference training code here
-    #model: LanguageModel = ModelFactory.from_model_args(model_args, env_args)
-    #model.train()
+    dataset = PromptDataset
+    language_model: AutoregressiveLM = ModelFactory.from_model_args(model_args, env_args)
 
-    print(dataset_args)
 
 
 if __name__ == "__main__":
