@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 
+from importlib_metadata import metadata
+
 
 @dataclass
 class DatasetArgs:
@@ -7,7 +9,12 @@ class DatasetArgs:
     """ This class contains all parameters for instantiating a Huggingface dataset. """
 
 
-    dataset_name: str = field(default="artem9k/ai-text-detection-pil", metadata={
+    dataset_name: str = field(default="src/extern/ai_text_detection_pile", metadata={
         "help": "reference to the language model on the hub",
-        "choices": ["artem9k/ai-text-detection-pile"]
+        "choices": ["src/extern/ai_text_detection_pile"]
+    })
+
+    ds_task: str = field(default="text-classification", metadata={
+        "help": "the task for which we load the text classification dataset",
+        "choices": ["text-classification", "text-generation"]
     })
