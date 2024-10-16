@@ -1,6 +1,4 @@
-
 from typing import List, Union
-
 import torch
 from datasets import tqdm
 from torch.utils.data import DataLoader
@@ -10,7 +8,7 @@ from src.arguments.env_args import EnvArgs
 from src.arguments.model_args import ModelArgs
 from src.arguments.optimizer_args import OptimizerArgs
 from src.datasets.text_classification_dataset import TextClassificationDataset
-
+import os
 
 class SequenceClassifierLM:
     def __init__(self, model_args: ModelArgs, env_args: EnvArgs = None):
@@ -41,6 +39,9 @@ class SequenceClassifierLM:
         data_loader: DataLoader = dataset.get_data_loader()
 
         self._train_one_epoch(data_loader, opt)
+
+        # Save model after training
+        self.save_model()
 
     def _train_one_epoch(
             self,
@@ -101,8 +102,8 @@ class SequenceClassifierLM:
 
             epoch_loss += loss.item()
             y_pred = outputs.logits.argmax(1)
-            ema_acc = ema_weight * ema_acc + (1-ema_weight) * (y_pred == labels).float().mean()
-            ema_loss = ema_weight * ema_loss + (1-ema_weight) * loss.item()
+            ema_acc = ema_weight * ema_acc + (1 - ema_weight) * (y_pred == labels).float().mean()
+            ema_loss = ema_weight * ema_loss + (1 - ema_weight) * loss.item()
             progress_bar.set_postfix({'loss': ema_loss, 'accuracy': ema_acc})
 
         avg_loss = epoch_loss / len(train_loader)
@@ -196,3 +197,17 @@ class SequenceClassifierLM:
         if isinstance(prompt, str):
             return int(predictions[0])
         return predictions.tolist()
+
+    def save_model(self, save_path: str = "./saved_model"):
+        """
+        Saves the model and tokenizer after training.
+
+        Args:
+            save_path (str): Directory path where the model and tokenizer will be saved.
+        """
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+
+        self.model.save_pretrained(save_path)
+        self.tokenizer.save_pretrained(save_path)
+        print(f"Model and tokenizer saved to {save_path}")
